@@ -121,6 +121,7 @@ const SUB_TABS = {
   ],
   diet: [
     { id: 'log', label: "Today's Log", icon: PieChart },
+    { id: 'targets', label: "Macro Goals", icon: Target },
     { id: 'plans', label: "Meal Plans", icon: CalendarDays },
     { id: 'recipes', label: "Recipes", icon: ChefHat },
     { id: 'foods', label: "Food Database", icon: Apple },
@@ -142,16 +143,65 @@ export default function GirlfriendFitnessApp() {
   const [notification, setNotification] = useState('');
   const showNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(''), 3000); };
 
-  // --- STATE: NUTRITION & CALCULATOR ---
+  // --- STATE: PROFILE & MACRO CALCULATOR ---
   const [age, setAge] = useState(34);
   const [weight, setWeight] = useState(49);
   const [height, setHeight] = useState(157);
   const [neck, setNeck] = useState('');
   const [waist, setWaist] = useState('');
   const [hip, setHip] = useState('');
+  
+  // Tunable Goals
+  const [activityLevel, setActivityLevel] = useState(1.2);
+  const [proteinPerKg, setProteinPerKg] = useState(1.6);
+  const [fatPerKg, setFatPerKg] = useState(1.1);
+  const [caloricSurplus, setCaloricSurplus] = useState(250);
+
   const [calcResults, setCalcResults] = useState({
-    calories: 1650, protein: 78, carbs: 213, fat: 54, bodyFat: null
+    method: "Mifflin-St Jeor", tdee: 1400, calories: 1650, protein: 78, carbs: 213, fat: 54, bodyFat: null
   });
+
+  // Calculate live preview whenever inputs change
+  useEffect(() => {
+    let bmr = 0; let bf = null; let method = "";
+    const w = parseFloat(weight) || 49;
+    const h = parseFloat(height) || 157;
+    const a = parseFloat(age) || 34;
+    
+    if (neck && waist && hip) {
+       const hInches = h / 2.54;
+       // Female Navy Body Fat Formula (requires inches)
+       bf = (163.205 * Math.log10(parseFloat(waist) + parseFloat(hip) - parseFloat(neck))) - (97.684 * Math.log10(hInches)) - 78.387;
+       const lbm = w * (1 - bf / 100);
+       bmr = 370 + (21.6 * lbm);
+       method = "Katch-McArdle";
+    } else {
+       bmr = (10 * w) + (6.25 * h) - (5 * a) - 161; 
+       method = "Mifflin-St Jeor";
+    }
+    
+    const tdee = bmr * parseFloat(activityLevel);
+    const targetCals = tdee + parseFloat(caloricSurplus);
+    const pro = w * parseFloat(proteinPerKg);
+    const f = w * parseFloat(fatPerKg);
+    const carb = (targetCals - (pro * 4) - (f * 9)) / 4;
+
+    setCalcResults({
+      method, bodyFat: bf ? bf.toFixed(1) : null,
+      tdee: Math.round(tdee), calories: Math.round(targetCals),
+      protein: Math.round(pro), fat: Math.round(f), carbs: Math.round(carb)
+    });
+  }, [age, weight, height, neck, waist, hip, activityLevel, proteinPerKg, fatPerKg, caloricSurplus]);
+
+  const saveProfile = async () => {
+    const profileData = {
+      age, weight, height, neck, waist, hip,
+      activityLevel, proteinPerKg, fatPerKg, caloricSurplus,
+      calcResults
+    };
+    if (!isMock) await setDoc(getDocRef('settings', 'profile'), profileData);
+    showNotification("Profile & Macro Goals Saved!");
+  };
 
   // --- FIREBASE AUTH LOGIC ---
   useEffect(() => {
@@ -276,6 +326,24 @@ export default function GirlfriendFitnessApp() {
       }
     });
     unsubs.push(unsubSchedule);
+
+    const unsubProfile = onSnapshot(doc(db, `${basePath}/settings`, 'profile'), (docSnap) => {
+      if (docSnap.exists()) {
+        const p = docSnap.data();
+        if (p.age) setAge(p.age);
+        if (p.weight) setWeight(p.weight);
+        if (p.height) setHeight(p.height);
+        if (p.neck) setNeck(p.neck);
+        if (p.waist) setWaist(p.waist);
+        if (p.hip) setHip(p.hip);
+        if (p.activityLevel) setActivityLevel(p.activityLevel);
+        if (p.proteinPerKg) setProteinPerKg(p.proteinPerKg);
+        if (p.fatPerKg) setFatPerKg(p.fatPerKg);
+        if (p.caloricSurplus) setCaloricSurplus(p.caloricSurplus);
+        // calcResults auto-calculates via useEffect
+      }
+    });
+    unsubs.push(unsubProfile);
 
     return () => unsubs.forEach(unsub => unsub());
   }, [user]);
@@ -659,36 +727,6 @@ export default function GirlfriendFitnessApp() {
     consumed.calories += ext.calories; consumed.protein += ext.protein; consumed.carbs += ext.carbs; consumed.fat += ext.fat;
   });
 
-  const calculateTargets = () => {
-    let bmr = 0; let bodyFatPercentage = null; let calculationMethod = "";
-    if (neck && waist && hip) {
-      const heightInInches = height / 2.54;
-      bodyFatPercentage = (163.205 * Math.log10(parseFloat(waist) + parseFloat(hip) - parseFloat(neck))) - (97.684 * Math.log10(heightInInches)) - 78.387;
-      const lbm = weight * (1 - bodyFatPercentage / 100);
-      bmr = 370 + (21.6 * lbm);
-      calculationMethod = "Katch-McArdle";
-    } else {
-      bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
-      calculationMethod = "Mifflin-St Jeor";
-    }
-    const tdee = bmr * 1.2; 
-    const targetCalories = tdee + 250; 
-    setCalcResults({
-      method: calculationMethod, bodyFat: bodyFatPercentage ? bodyFatPercentage.toFixed(1) : null,
-      tdee: Math.round(tdee), calories: Math.round(targetCalories), 
-      protein: Math.round(weight * 1.6), fat: Math.round(weight * 1.1), 
-      carbs: Math.round((targetCalories - (weight * 1.6 * 4) - (weight * 1.1 * 9)) / 4)
-    });
-  };
-
-  const mifflinBMR = Math.round((10 * weight) + (6.25 * height) - (5 * age) - 161);
-  const harrisBMR = Math.round(447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age));
-  let katchBMRText = "Requires Body Fat % (Tape measures)";
-  if (calcResults.bodyFat) {
-    const lbm = weight * (1 - calcResults.bodyFat / 100);
-    katchBMRText = Math.round(370 + (21.6 * lbm)) + " kcal";
-  }
-
   // =========================================================================
   // LOGIN SCREEN RENDER
   // =========================================================================
@@ -1044,6 +1082,127 @@ export default function GirlfriendFitnessApp() {
           )}
 
           {/* ==================== DIET HUB ==================== */}
+          {mainTab === 'diet' && subTabs.diet === 'targets' && (
+            <div className="animate-in fade-in duration-500 space-y-6">
+              <div className="flex justify-between items-end mb-4">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><Target className="text-rose-400" size={28} /> Macro Goals</h2>
+                  <p className="text-slate-400 text-xs sm:text-sm mt-1">Tune your engine and adjust your fuel.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* 1. BODY METRICS */}
+                <div className="bg-slate-900 p-5 sm:p-6 rounded-[2rem] border border-slate-800 shadow-xl">
+                  <h3 className="text-lg font-bold text-white mb-4 border-b border-slate-800 pb-3 flex items-center gap-2"><Ruler size={18} className="text-rose-400"/> 1. Body Metrics</h3>
+                  <div className="grid grid-cols-3 gap-3 mb-6">
+                    <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">AGE</label><input type="number" value={age} onChange={e=>setAge(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" /></div>
+                    <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">WEIGHT (KG)</label><input type="number" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" /></div>
+                    <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">HEIGHT (CM)</label><input type="number" value={height} onChange={e=>setHeight(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" /></div>
+                  </div>
+                  
+                  <p className="text-xs text-slate-400 mb-3 italic">Optional: Tape measurements unlock the highly accurate Katch-McArdle formula.</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">NECK (IN)</label><input type="number" value={neck} onChange={e=>setNeck(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" placeholder="Optional" /></div>
+                    <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">WAIST (IN)</label><input type="number" value={waist} onChange={e=>setWaist(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" placeholder="Optional" /></div>
+                    <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">HIPS (IN)</label><input type="number" value={hip} onChange={e=>setHip(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" placeholder="Optional" /></div>
+                  </div>
+                </div>
+
+                {/* 2. LIFESTYLE & MACROS */}
+                <div className="bg-slate-900 p-5 sm:p-6 rounded-[2rem] border border-slate-800 shadow-xl">
+                  <h3 className="text-lg font-bold text-white mb-4 border-b border-slate-800 pb-3 flex items-center gap-2"><Activity size={18} className="text-orange-400"/> 2. Lifestyle & Goals</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block">ACTIVITY LEVEL</label>
+                      <select value={activityLevel} onChange={e=>setActivityLevel(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs font-bold focus:outline-none focus:border-orange-500 appearance-none">
+                        <option value={1.2}>Sedentary (1.2)</option>
+                        <option value={1.375}>Lightly Active (1.375)</option>
+                        <option value={1.55}>Moderately Active (1.55)</option>
+                        <option value={1.725}>Very Active (1.725)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 mb-1 block">GOAL</label>
+                      <select value={caloricSurplus} onChange={e=>setCaloricSurplus(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs font-bold focus:outline-none focus:border-orange-500 appearance-none">
+                        <option value={0}>Maintenance (+0 kcal)</option>
+                        <option value={250}>Lean Bulk (+250 kcal)</option>
+                        <option value={500}>Aggressive Bulk (+500 kcal)</option>
+                        <option value={-250}>Light Cut (-250 kcal)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[10px] font-bold text-rose-400">PROTEIN INTAKE</label>
+                        <span className="text-xs font-bold text-white">{proteinPerKg}g / kg</span>
+                      </div>
+                      <input type="range" min="1.6" max="2.2" step="0.1" value={proteinPerKg} onChange={e=>setProteinPerKg(e.target.value)} className="w-full accent-rose-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                      <div className="flex justify-between text-[8px] text-slate-500 mt-1"><span>1.6g (Optimal)</span><span>2.2g (Max)</span></div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[10px] font-bold text-yellow-400">FAT INTAKE</label>
+                        <span className="text-xs font-bold text-white">{fatPerKg}g / kg</span>
+                      </div>
+                      <input type="range" min="0.8" max="1.2" step="0.1" value={fatPerKg} onChange={e=>setFatPerKg(e.target.value)} className="w-full accent-yellow-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                      <div className="flex justify-between text-[8px] text-slate-500 mt-1"><span>0.8g (Min)</span><span>1.2g (Hormone Health)</span></div>
+                    </div>
+                    <p className="text-xs text-cyan-400 italic text-center mt-2">Carbs are automatically calculated to fill the rest of your daily calories.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* LIVE RESULTS BANNER */}
+              <div className="bg-gradient-to-r from-rose-500 to-orange-500 p-1 rounded-[2rem] shadow-2xl mt-6">
+                <div className="bg-slate-950 p-5 sm:p-8 rounded-[calc(2rem-4px)] flex flex-col items-center">
+                  <p className="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest text-center">Calculated via {calcResults.method}</p>
+                  
+                  <div className="flex flex-wrap justify-center gap-4 sm:gap-8 mb-8 w-full">
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 font-bold mb-1">TDEE</p>
+                      <p className="text-2xl sm:text-3xl font-black text-slate-300">{calcResults.tdee}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-slate-500 font-bold mb-1">TARGET CALORIES</p>
+                      <p className="text-3xl sm:text-4xl font-black text-amber-400">{calcResults.calories}</p>
+                    </div>
+                    {calcResults.bodyFat && (
+                      <div className="text-center hidden sm:block">
+                        <p className="text-[10px] text-slate-500 font-bold mb-1">EST. BODY FAT</p>
+                        <p className="text-2xl sm:text-3xl font-black text-emerald-400">{calcResults.bodyFat}%</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full max-w-lg mb-8">
+                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 text-center">
+                       <p className="text-[10px] text-slate-500 font-bold mb-1">PROTEIN</p>
+                       <p className="text-xl sm:text-2xl font-black text-rose-400">{calcResults.protein}g</p>
+                     </div>
+                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 text-center">
+                       <p className="text-[10px] text-slate-500 font-bold mb-1">CARBS</p>
+                       <p className="text-xl sm:text-2xl font-black text-cyan-400">{calcResults.carbs}g</p>
+                     </div>
+                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 text-center">
+                       <p className="text-[10px] text-slate-500 font-bold mb-1">FAT</p>
+                       <p className="text-xl sm:text-2xl font-black text-yellow-400">{calcResults.fat}g</p>
+                     </div>
+                  </div>
+
+                  <button onClick={saveProfile} className="w-full max-w-md bg-gradient-to-r from-rose-500 to-orange-500 text-white py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">
+                    <Save size={20} /> SAVE PROFILE & MACROS
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {mainTab === 'diet' && subTabs.diet === 'log' && (
              <div className="space-y-6 animate-in fade-in duration-500">
               {calcResults && (

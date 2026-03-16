@@ -1,12 +1,10 @@
-import withPWAInit from "@ducanh2912/next-pwa";
-
-const withPWA = withPWAInit({
+const withPWA = require("@ducanh2912/next-pwa").default({
   dest: "public",
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   swcMinify: true,
-  disable: process.env.NODE_ENV === "development", // Disables PWA in dev mode
+  disable: process.env.NODE_ENV === "development", // Disables PWA in dev mode so it doesn't cache your active coding
 });
 
 /** @type {import('next').NextConfig} */
@@ -14,4 +12,4 @@ const nextConfig = {
   reactStrictMode: true,
 };
 
-export default withPWA(nextConfig);
+module.exports = withPWA(nextConfig);
