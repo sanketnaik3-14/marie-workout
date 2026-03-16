@@ -293,24 +293,18 @@ export default function GirlfriendFitnessApp() {
     const basePath = `artifacts/${appId}/users/${uid}`;
     const unsubs = [];
 
-    const syncCol = (colName, setter, seedData = null) => {
-      let isFirstLoad = true;
+    const syncCol = (colName, setter) => {
       const unsubscribe = onSnapshot(collection(db, `${basePath}/${colName}`), (snap) => {
-        if (snap.empty && isFirstLoad && seedData) {
-          seedData.forEach(item => setDoc(doc(db, `${basePath}/${colName}`, item.id.toString()), item));
-        } else {
-          setter(snap.docs.map(d => d.data()));
-        }
-        isFirstLoad = false;
+        setter(snap.docs.map(d => d.data()));
       }, (err) => console.error(`Error syncing ${colName}:`, err));
       unsubs.push(unsubscribe);
     };
 
-    syncCol('ingredients', setIngredients, DEFAULT_INGREDIENTS);
-    syncCol('recipes', setRecipes, DEFAULT_RECIPES);
-    syncCol('mealTemplates', setMealTemplates, DEFAULT_TEMPLATES);
-    syncCol('exercises', setExercises, DEFAULT_EXERCISES);
-    syncCol('workoutTemplates', setWorkoutTemplates, DEFAULT_WORKOUT_TEMPLATES);
+    syncCol('ingredients', setIngredients);
+    syncCol('recipes', setRecipes);
+    syncCol('mealTemplates', setMealTemplates);
+    syncCol('exercises', setExercises);
+    syncCol('workoutTemplates', setWorkoutTemplates);
     syncCol('dailyExtras', setDailyExtras);
     syncCol('workoutHistory', setMockWorkoutHistory);
     syncCol('measurementHistory', setMockMeasurementHistory);
@@ -327,6 +321,13 @@ export default function GirlfriendFitnessApp() {
         }
       } else {
         setDoc(doc(db, `${basePath}/settings`, 'schedule'), DEFAULT_SCHEDULE);
+        
+        // Seed default databases ONLY on very first account creation
+        DEFAULT_INGREDIENTS.forEach(item => setDoc(doc(db, `${basePath}/ingredients`, item.id.toString()), item));
+        DEFAULT_RECIPES.forEach(item => setDoc(doc(db, `${basePath}/recipes`, item.id.toString()), item));
+        DEFAULT_TEMPLATES.forEach(item => setDoc(doc(db, `${basePath}/mealTemplates`, item.id.toString()), item));
+        DEFAULT_EXERCISES.forEach(item => setDoc(doc(db, `${basePath}/exercises`, item.id.toString()), item));
+        DEFAULT_WORKOUT_TEMPLATES.forEach(item => setDoc(doc(db, `${basePath}/workoutTemplates`, item.id.toString()), item));
       }
     });
     unsubs.push(unsubSchedule);
