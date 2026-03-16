@@ -6,17 +6,75 @@ import {
   Save, BookOpen, Target, Camera, ImagePlus, CheckCircle2, 
   History, ChevronLeft, Dumbbell, Ruler, Apple, Plus, PieChart, 
   Trash2, ChefHat, Search, X, CalendarDays, CalendarClock, Compass,
-  Edit3, Timer
+  Edit3, Timer, Lock, User, Eye, EyeOff
 } from 'lucide-react';
 
-export default function GirlfriendFitnessApp() {
-  const [activeTab, setActiveTab] = useState('training'); 
-  const [notification, setNotification] = useState('');
+// --- FIREBASE IMPORTS ---
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
-  const showNotification = (msg) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(''), 3000);
-  };
+// Safely initialize Firebase so it compiles correctly in all environments
+const safeEnv = typeof process !== 'undefined' ? process.env : {};
+
+const firebaseConfig = {
+  apiKey: safeEnv.NEXT_PUBLIC_FIREBASE_API_KEY || "mock-key",
+  authDomain: safeEnv.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "mock-domain",
+  projectId: safeEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mock-project",
+  storageBucket: safeEnv.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "mock-bucket",
+  messagingSenderId: safeEnv.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "mock-sender",
+  appId: safeEnv.NEXT_PUBLIC_FIREBASE_APP_ID || "mock-app-id"
+};
+
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const isMock = firebaseConfig.apiKey === "mock-key"; // Fallback for local testing without keys
+
+// --- DEFAULT SEED DATA ---
+const DEFAULT_INGREDIENTS = [
+  { id: 'i1', name: "Chicken Breast", category: "Proteins", baseQuantity: 100, unit: "g", protein: 31, carbs: 0, fat: 3.6, calories: 165 },
+  { id: 'i2', name: "Whole Egg", category: "Proteins", baseQuantity: 1, unit: "Large", protein: 6, carbs: 0.6, fat: 5, calories: 72 },
+  { id: 'i3', name: "Whey Protein", category: "Proteins", baseQuantity: 1, unit: "Scoop", protein: 25, carbs: 3, fat: 2, calories: 120 },
+  { id: 'i4', name: "White Rice (Cooked)", category: "Carbs", baseQuantity: 100, unit: "g", protein: 2.7, carbs: 28, fat: 0.3, calories: 130 },
+  { id: 'i5', name: "Kamote (Sweet Potato)", category: "Carbs", baseQuantity: 100, unit: "g", protein: 1.6, carbs: 20, fat: 0.1, calories: 86 },
+  { id: 'i6', name: "Rolled Oats", category: "Carbs", baseQuantity: 50, unit: "g", protein: 6.5, carbs: 34, fat: 3.2, calories: 189 },
+  { id: 'i7', name: "Peanut Butter", category: "Fats", baseQuantity: 1, unit: "Tbsp", protein: 4, carbs: 3, fat: 8, calories: 95 },
+];
+
+const DEFAULT_RECIPES = [
+  {
+    id: 'r1', name: "Power Banana Shake", baseQuantity: 1, unit: "Serving",
+    calories: 310, protein: 29, carbs: 37, fat: 10,
+    items: [{ name: "Whey Protein", qty: 1, unit: "Scoop", calories: 120, protein: 25, carbs: 3, fat: 2 }, { name: "Peanut Butter", qty: 1, unit: "Tbsp", calories: 95, protein: 4, carbs: 3, fat: 8 }]
+  }
+];
+
+const DEFAULT_TEMPLATES = [
+  {
+    id: 't1', name: "Heavy Lifting Fuel", mealCount: 4, totalCalories: 1530, totalProtein: 102, totalCarbs: 185, totalFat: 42,
+    meals: [
+      { id: 'm1', name: 'Meal 1', items: [{ id: 'r1', name: 'Power Banana Shake', qty: 1, unit: 'Serving', calories: 310, protein: 29, carbs: 37, fat: 10 }] },
+      { id: 'm2', name: 'Meal 2', items: [{ id: 'i1', name: 'Chicken Breast', qty: 150, unit: 'g', calories: 247, protein: 46, carbs: 0, fat: 5 }] },
+      { id: 'm3', name: 'Meal 3', items: [{ id: 'i4', name: 'White Rice (Cooked)', qty: 150, unit: 'g', calories: 195, protein: 4, carbs: 42, fat: 0 }] },
+      { id: 'm4', name: 'Meal 4', items: [{ id: 'i2', name: 'Whole Egg', qty: 2, unit: 'Large', calories: 144, protein: 12, carbs: 1, fat: 10 }] }
+    ]
+  }
+];
+
+export default function GirlfriendFitnessApp() {
+  // --- AUTHENTICATION STATE ---
+  const [user, setUser] = useState(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
+  // --- STANDARD APP STATE ---
+  const [activeTab, setActiveTab] = useState('planner'); 
+  const [notification, setNotification] = useState('');
+  const showNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(''), 3000); };
 
   // --- STATE: NUTRITION & CALCULATOR ---
   const [age, setAge] = useState(34);
@@ -29,17 +87,109 @@ export default function GirlfriendFitnessApp() {
     calories: 1650, protein: 78, carbs: 213, fat: 54, bodyFat: null
   });
 
-  // --- STATE: INGREDIENTS DATABASE ---
-  const [ingredients, setIngredients] = useState([
-    { id: 'i1', name: "Chicken Breast", category: "Proteins", baseQuantity: 100, unit: "g", protein: 31, carbs: 0, fat: 3.6, calories: 165 },
-    { id: 'i2', name: "Whole Egg", category: "Proteins", baseQuantity: 1, unit: "Large", protein: 6, carbs: 0.6, fat: 5, calories: 72 },
-    { id: 'i3', name: "Whey Protein", category: "Proteins", baseQuantity: 1, unit: "Scoop", protein: 25, carbs: 3, fat: 2, calories: 120 },
-    { id: 'i4', name: "White Rice (Cooked)", category: "Carbs", baseQuantity: 100, unit: "g", protein: 2.7, carbs: 28, fat: 0.3, calories: 130 },
-    { id: 'i5', name: "Kamote (Sweet Potato)", category: "Carbs", baseQuantity: 100, unit: "g", protein: 1.6, carbs: 20, fat: 0.1, calories: 86 },
-    { id: 'i6', name: "Rolled Oats", category: "Carbs", baseQuantity: 50, unit: "g", protein: 6.5, carbs: 34, fat: 3.2, calories: 189 },
-    { id: 'i7', name: "Peanut Butter", category: "Fats", baseQuantity: 1, unit: "Tbsp", protein: 4, carbs: 3, fat: 8, calories: 95 },
-  ]);
+  // --- FIREBASE AUTH LOGIC ---
+  useEffect(() => {
+    try {
+      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setAuthChecking(false);
+      });
+      return () => unsubscribe();
+    } catch (err) {
+      console.warn("Firebase not fully configured yet.", err);
+      setAuthChecking(false);
+    }
+  }, []);
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    if (!email || !password) return setLoginError("Please enter email and password.");
+    try {
+      if (isMock) { setUser({ email, uid: 'mock-user-123' }); return; }
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      setLoginError("Incorrect email or password.");
+    }
+  };
+
+  const handleLogout = async () => {
+    try { await signOut(auth); } catch (e) {}
+    setUser(null);
+    localStorage.removeItem('islandGainsActiveTab');
+  };
+
+  // UI STATE RETENTION
+  useEffect(() => {
+    if (user) {
+      const savedTab = localStorage.getItem('islandGainsActiveTab');
+      if (savedTab) setActiveTab(savedTab);
+    }
+  }, [user]);
+
+  const switchTab = (tabId) => {
+    setActiveTab(tabId);
+    localStorage.setItem('islandGainsActiveTab', tabId);
+    if (setProgressView) setProgressView('overview'); 
+  };
+
+  // --- FIREBASE DATABASE PATH HELPERS ---
+  const getDocRef = (colName, docId) => {
+    const uid = user?.uid || 'guest';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'island-gains';
+    return doc(db, `artifacts/${appId}/users/${uid}/${colName}`, docId.toString());
+  };
+
+  // --- REAL-TIME DATABASE STATE ---
+  const [ingredients, setIngredients] = useState(DEFAULT_INGREDIENTS);
+  const [recipes, setRecipes] = useState(DEFAULT_RECIPES);
+  const [mealTemplates, setMealTemplates] = useState(DEFAULT_TEMPLATES);
+  const [assignedPlans, setAssignedPlans] = useState({ Monday: 't1', Tuesday: null, Wednesday: 't1', Thursday: null, Friday: 't1', Saturday: null, Sunday: null });
+  const [dailyExtras, setDailyExtras] = useState([]);
+  const [mockWorkoutHistory, setMockWorkoutHistory] = useState([]);
+  const [mockMeasurementHistory, setMockMeasurementHistory] = useState([]);
+
+  // --- REAL-TIME CLOUD SYNC LOGIC ---
+  useEffect(() => {
+    if (!user || isMock) return;
+
+    const uid = user.uid;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'island-gains';
+    const basePath = `artifacts/${appId}/users/${uid}`;
+    const unsubs = [];
+
+    // Helper to sync collections and auto-seed if empty
+    const syncCol = (colName, setter, seedData = null) => {
+      let isFirstLoad = true;
+      const unsubscribe = onSnapshot(collection(db, `${basePath}/${colName}`), (snap) => {
+        if (snap.empty && isFirstLoad && seedData) {
+          seedData.forEach(item => setDoc(doc(db, `${basePath}/${colName}`, item.id.toString()), item));
+        } else {
+          setter(snap.docs.map(d => d.data()));
+        }
+        isFirstLoad = false;
+      }, (err) => console.error(`Error syncing ${colName}:`, err));
+      unsubs.push(unsubscribe);
+    };
+
+    syncCol('ingredients', setIngredients, DEFAULT_INGREDIENTS);
+    syncCol('recipes', setRecipes, DEFAULT_RECIPES);
+    syncCol('mealTemplates', setMealTemplates, DEFAULT_TEMPLATES);
+    syncCol('dailyExtras', setDailyExtras);
+    syncCol('workoutHistory', setMockWorkoutHistory);
+    syncCol('measurementHistory', setMockMeasurementHistory);
+
+    // Sync Schedule Settings (Single Document)
+    const unsubSchedule = onSnapshot(doc(db, `${basePath}/settings`, 'schedule'), (docSnap) => {
+      if (docSnap.exists()) { setAssignedPlans(docSnap.data()); }
+    });
+    unsubs.push(unsubSchedule);
+
+    return () => unsubs.forEach(unsub => unsub());
+  }, [user]);
+
+
+  // --- CLOUD CRUD: INGREDIENTS ---
   const [activeIngredientFilter, setActiveIngredientFilter] = useState('All');
   const [showAddIngredient, setShowAddIngredient] = useState(false);
   const [newIngredient, setNewIngredient] = useState({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' });
@@ -48,59 +198,37 @@ export default function GirlfriendFitnessApp() {
   const ingredientCategories = ['All', 'Proteins', 'Carbs', 'Fats', 'Spices', 'Sauces'];
   const filteredIngredients = activeIngredientFilter === 'All' ? ingredients : ingredients.filter(i => i.category === activeIngredientFilter);
 
-  const saveIngredient = () => {
-    if (!newIngredient.name || newIngredient.protein === '' || newIngredient.carbs === '' || newIngredient.fat === '') {
-      return showNotification("Please fill all ingredient fields.");
-    }
-    const p = parseFloat(newIngredient.protein);
-    const c = parseFloat(newIngredient.carbs);
-    const f = parseFloat(newIngredient.fat);
-    const cals = Math.round((p * 4) + (c * 4) + (f * 9));
-    
+  const saveIngredient = async () => {
+    if (!newIngredient.name || newIngredient.protein === '' || newIngredient.carbs === '' || newIngredient.fat === '') return showNotification("Fill all fields.");
     const addedItem = {
-      id: editingIngredientId || `i${Date.now()}`,
-      name: newIngredient.name, category: newIngredient.category,
+      id: editingIngredientId || `i${Date.now()}`, name: newIngredient.name, category: newIngredient.category,
       baseQuantity: parseFloat(newIngredient.baseQuantity), unit: newIngredient.unit,
-      protein: p, carbs: c, fat: f, calories: cals
+      protein: parseFloat(newIngredient.protein), carbs: parseFloat(newIngredient.carbs), fat: parseFloat(newIngredient.fat), 
+      calories: Math.round((parseFloat(newIngredient.protein) * 4) + (parseFloat(newIngredient.carbs) * 4) + (parseFloat(newIngredient.fat) * 9))
     };
 
-    if (editingIngredientId) {
-      setIngredients(ingredients.map(i => i.id === editingIngredientId ? addedItem : i));
+    if (!isMock) {
+      await setDoc(getDocRef('ingredients', addedItem.id), addedItem);
     } else {
-      setIngredients([addedItem, ...ingredients]);
+      if (editingIngredientId) setIngredients(ingredients.map(i => i.id === editingIngredientId ? addedItem : i));
+      else setIngredients([addedItem, ...ingredients]);
     }
-
     setNewIngredient({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' });
-    setShowAddIngredient(false);
-    setEditingIngredientId(null);
-    showNotification(`${addedItem.name} saved!`);
+    setShowAddIngredient(false); setEditingIngredientId(null); showNotification(`${addedItem.name} saved!`);
   };
 
   const editIngredient = (item) => {
-    setNewIngredient({
-      name: item.name, category: item.category,
-      baseQuantity: item.baseQuantity, unit: item.unit,
-      protein: item.protein, carbs: item.carbs, fat: item.fat
-    });
-    setEditingIngredientId(item.id);
-    setShowAddIngredient(true);
+    setNewIngredient({ name: item.name, category: item.category, baseQuantity: item.baseQuantity, unit: item.unit, protein: item.protein, carbs: item.carbs, fat: item.fat });
+    setEditingIngredientId(item.id); setShowAddIngredient(true);
   };
 
-  const deleteIngredient = (id) => {
-    setIngredients(ingredients.filter(i => i.id !== id));
+  const deleteIngredient = async (id) => {
+    if (!isMock) await deleteDoc(getDocRef('ingredients', id));
+    else setIngredients(ingredients.filter(i => i.id !== id));
     showNotification("Ingredient deleted.");
   };
 
-  // --- STATE: RECIPES ---
-  const [recipes, setRecipes] = useState([
-    {
-      id: 'r1', name: "Power Banana Shake", 
-      baseQuantity: 1, unit: "Serving",
-      calories: 310, protein: 29, carbs: 37, fat: 10,
-      items: [{ name: "Whey Protein", qty: 1, unit: "Scoop", calories: 120, protein: 25, carbs: 3, fat: 2 }, { name: "Peanut Butter", qty: 1, unit: "Tbsp", calories: 95, protein: 4, carbs: 3, fat: 8 }]
-    }
-  ]);
-  
+  // --- CLOUD CRUD: RECIPES ---
   const [isCreatingRecipe, setIsCreatingRecipe] = useState(false);
   const [editingRecipeId, setEditingRecipeId] = useState(null);
   const [draftRecipeName, setDraftRecipeName] = useState('');
@@ -110,62 +238,41 @@ export default function GirlfriendFitnessApp() {
     if (!qty || qty <= 0) return;
     const ratio = qty / ing.baseQuantity;
     const newItem = {
-      id: ing.id, name: ing.name, qty: parseFloat(qty), unit: ing.unit,
-      calories: Math.round(ing.calories * ratio),
-      protein: Math.round(ing.protein * ratio * 10)/10,
-      carbs: Math.round(ing.carbs * ratio * 10)/10,
-      fat: Math.round(ing.fat * ratio * 10)/10
+      id: ing.id, name: ing.name, qty: parseFloat(qty), unit: ing.unit, calories: Math.round(ing.calories * ratio),
+      protein: Math.round(ing.protein * ratio * 10)/10, carbs: Math.round(ing.carbs * ratio * 10)/10, fat: Math.round(ing.fat * ratio * 10)/10
     };
     setDraftRecipeItems([...draftRecipeItems, newItem]);
   };
 
-  const recipeDraftTotals = draftRecipeItems.reduce((acc, curr) => ({
-    calories: acc.calories + curr.calories, protein: acc.protein + curr.protein, carbs: acc.carbs + curr.carbs, fat: acc.fat + curr.fat
-  }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  const recipeDraftTotals = draftRecipeItems.reduce((acc, curr) => ({ calories: acc.calories + curr.calories, protein: acc.protein + curr.protein, carbs: acc.carbs + curr.carbs, fat: acc.fat + curr.fat }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-  const saveRecipe = () => {
+  const saveRecipe = async () => {
     if (!draftRecipeName || draftRecipeItems.length === 0) return showNotification("Need a name and ingredients!");
     const newRecipe = {
       id: editingRecipeId || `r${Date.now()}`, name: draftRecipeName, baseQuantity: 1, unit: "Serving",
       calories: Math.round(recipeDraftTotals.calories), protein: Math.round(recipeDraftTotals.protein),
-      carbs: Math.round(recipeDraftTotals.carbs), fat: Math.round(recipeDraftTotals.fat),
-      items: draftRecipeItems
+      carbs: Math.round(recipeDraftTotals.carbs), fat: Math.round(recipeDraftTotals.fat), items: draftRecipeItems
     };
-    if (editingRecipeId) {
-      setRecipes(recipes.map(r => r.id === editingRecipeId ? newRecipe : r));
+    if (!isMock) {
+      await setDoc(getDocRef('recipes', newRecipe.id), newRecipe);
     } else {
-      setRecipes([newRecipe, ...recipes]);
+      if (editingRecipeId) setRecipes(recipes.map(r => r.id === editingRecipeId ? newRecipe : r));
+      else setRecipes([newRecipe, ...recipes]);
     }
-    setIsCreatingRecipe(false); setEditingRecipeId(null); setDraftRecipeName(''); setDraftRecipeItems([]);
-    showNotification(`Recipe '${newRecipe.name}' saved!`);
+    setIsCreatingRecipe(false); setEditingRecipeId(null); setDraftRecipeName(''); setDraftRecipeItems([]); showNotification(`Recipe saved!`);
   };
 
-  const deleteRecipe = (id) => {
-    setRecipes(recipes.filter(r => r.id !== id));
+  const deleteRecipe = async (id) => {
+    if (!isMock) await deleteDoc(getDocRef('recipes', id));
+    else setRecipes(recipes.filter(r => r.id !== id));
     showNotification("Recipe deleted.");
   };
 
   const editRecipe = (recipe) => {
-    setDraftRecipeName(recipe.name);
-    setDraftRecipeItems(recipe.items);
-    setEditingRecipeId(recipe.id);
-    setIsCreatingRecipe(true);
+    setDraftRecipeName(recipe.name); setDraftRecipeItems(recipe.items); setEditingRecipeId(recipe.id); setIsCreatingRecipe(true);
   };
 
-  // --- STATE: MEAL PLANNER (TEMPLATES) ---
-  const [mealTemplates, setMealTemplates] = useState([
-    {
-      id: 't1', name: "Heavy Lifting Fuel", mealCount: 4,
-      totalCalories: 1530, totalProtein: 102, totalCarbs: 185, totalFat: 42,
-      meals: [
-        { id: 'm1', name: 'Meal 1', items: [{ id: 'r1', name: 'Power Banana Shake', qty: 1, unit: 'Serving', calories: 310, protein: 29, carbs: 37, fat: 10 }] },
-        { id: 'm2', name: 'Meal 2', items: [{ id: 'i1', name: 'Chicken Breast', qty: 150, unit: 'g', calories: 247, protein: 46, carbs: 0, fat: 5 }] },
-        { id: 'm3', name: 'Meal 3', items: [{ id: 'i4', name: 'White Rice (Cooked)', qty: 150, unit: 'g', calories: 195, protein: 4, carbs: 42, fat: 0 }] },
-        { id: 'm4', name: 'Meal 4', items: [{ id: 'i2', name: 'Whole Egg', qty: 2, unit: 'Large', calories: 144, protein: 12, carbs: 1, fat: 10 }] }
-      ]
-    }
-  ]);
-
+  // --- CLOUD CRUD: MEAL PLANNER (TEMPLATES) ---
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState(null);
   const [draftTemplateName, setDraftTemplateName] = useState('');
@@ -174,27 +281,21 @@ export default function GirlfriendFitnessApp() {
   const [activeAddingMealId, setActiveAddingMealId] = useState(null);
 
   useEffect(() => {
-    if (isCreatingTemplate && !editingTemplateId && draftMeals.length === 0) {
-      setDraftMeals(Array.from({ length: draftMealCount }, (_, i) => ({ id: `dm${i+1}`, name: `Meal ${i+1}`, items: [] })));
-    }
+    if (isCreatingTemplate && !editingTemplateId && draftMeals.length === 0) setDraftMeals(Array.from({ length: draftMealCount }, (_, i) => ({ id: `dm${i+1}`, name: `Meal ${i+1}`, items: [] })));
   }, [isCreatingTemplate, draftMealCount, editingTemplateId]);
 
   const handleMealCountChange = (num) => {
-    setDraftMealCount(num);
-    const newMeals = Array.from({ length: num }, (_, i) => draftMeals[i] || { id: `dm${i+1}`, name: `Meal ${i+1}`, items: [] });
-    setDraftMeals(newMeals);
+    setDraftMealCount(num); setDraftMeals(Array.from({ length: num }, (_, i) => draftMeals[i] || { id: `dm${i+1}`, name: `Meal ${i+1}`, items: [] }));
   };
 
-  const addItemToDraftMeal = (item, qty, isRecipe) => {
+  const addItemToDraftMeal = (item, qty) => {
     if (!qty || qty <= 0) return showNotification("Enter a valid quantity");
     const ratio = qty / item.baseQuantity;
     const addedItem = {
-      id: item.id, name: item.name, qty: parseFloat(qty), unit: item.unit,
-      calories: Math.round(item.calories * ratio), protein: Math.round(item.protein * ratio * 10)/10,
-      carbs: Math.round(item.carbs * ratio * 10)/10, fat: Math.round(item.fat * ratio * 10)/10,
+      id: item.id, name: item.name, qty: parseFloat(qty), unit: item.unit, calories: Math.round(item.calories * ratio), 
+      protein: Math.round(item.protein * ratio * 10)/10, carbs: Math.round(item.carbs * ratio * 10)/10, fat: Math.round(item.fat * ratio * 10)/10,
     };
-    setDraftMeals(draftMeals.map(m => m.id === activeAddingMealId ? { ...m, items: [...m.items, addedItem] } : m));
-    setActiveAddingMealId(null);
+    setDraftMeals(draftMeals.map(m => m.id === activeAddingMealId ? { ...m, items: [...m.items, addedItem] } : m)); setActiveAddingMealId(null);
   };
 
   const removeDraftItem = (mealId, itemIndex) => {
@@ -206,94 +307,99 @@ export default function GirlfriendFitnessApp() {
     return acc;
   }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-  const saveTemplate = () => {
+  const saveTemplate = async () => {
     if (!draftTemplateName) return showNotification("Give your meal plan a name!");
     const newTemplate = {
       id: editingTemplateId || `t${Date.now()}`, name: draftTemplateName, mealCount: draftMealCount,
       totalCalories: Math.round(templateTotals.calories), totalProtein: Math.round(templateTotals.protein),
       totalCarbs: Math.round(templateTotals.carbs), totalFat: Math.round(templateTotals.fat), meals: draftMeals
     };
-    
-    if (editingTemplateId) {
-      setMealTemplates(mealTemplates.map(t => t.id === editingTemplateId ? newTemplate : t));
+    if (!isMock) {
+      await setDoc(getDocRef('mealTemplates', newTemplate.id), newTemplate);
     } else {
-      setMealTemplates([...mealTemplates, newTemplate]);
+      if (editingTemplateId) setMealTemplates(mealTemplates.map(t => t.id === editingTemplateId ? newTemplate : t));
+      else setMealTemplates([...mealTemplates, newTemplate]);
     }
-    setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]);
-    showNotification(`Template '${newTemplate.name}' saved!`);
+    setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); showNotification(`Template saved!`);
   };
 
   const editTemplate = (template) => {
-    setDraftTemplateName(template.name); setDraftMealCount(template.mealCount);
-    setDraftMeals(template.meals); setEditingTemplateId(template.id);
-    setIsCreatingTemplate(true);
+    setDraftTemplateName(template.name); setDraftMealCount(template.mealCount); setDraftMeals(template.meals); setEditingTemplateId(template.id); setIsCreatingTemplate(true);
   };
 
-  const deleteTemplate = (id) => {
-    setMealTemplates(mealTemplates.filter(t => t.id !== id));
+  const deleteTemplate = async (id) => {
+    if (!isMock) await deleteDoc(getDocRef('mealTemplates', id));
+    else setMealTemplates(mealTemplates.filter(t => t.id !== id));
+    
+    // Also remove it from schedule
     const newAssigned = {...assignedPlans};
     Object.keys(newAssigned).forEach(k => { if(newAssigned[k] === id) newAssigned[k] = null; });
-    setAssignedPlans(newAssigned);
+    if (!isMock) await setDoc(getDocRef('settings', 'schedule'), newAssigned);
+    else setAssignedPlans(newAssigned);
     showNotification("Meal plan deleted.");
   };
 
-  // --- STATE: MEAL ASSIGNER (SCHEDULE) ---
-  const [assignedPlans, setAssignedPlans] = useState({
-    Monday: 't1', Tuesday: null, Wednesday: 't1', Thursday: null, Friday: 't1', Saturday: null, Sunday: null
-  });
-
-  const assignPlanToDay = (day, templateId) => {
-    setAssignedPlans({ ...assignedPlans, [day]: templateId }); showNotification(`Plan assigned to ${day}`);
+  // --- CLOUD CRUD: MEAL ASSIGNER (SCHEDULE) ---
+  const assignPlanToDay = async (day, templateId) => {
+    const newAssigned = { ...assignedPlans, [day]: templateId };
+    if (!isMock) await setDoc(getDocRef('settings', 'schedule'), newAssigned);
+    else setAssignedPlans(newAssigned);
+    showNotification(`Plan assigned to ${day}`);
   };
-  const clearDayPlan = (day) => setAssignedPlans({ ...assignedPlans, [day]: null });
-  const clearAllPlans = () => {
-    setAssignedPlans({ Monday: null, Tuesday: null, Wednesday: null, Thursday: null, Friday: null, Saturday: null, Sunday: null });
+  const clearDayPlan = async (day) => {
+    const newAssigned = { ...assignedPlans, [day]: null };
+    if (!isMock) await setDoc(getDocRef('settings', 'schedule'), newAssigned);
+    else setAssignedPlans(newAssigned);
+  };
+  const clearAllPlans = async () => {
+    const newAssigned = { Monday: null, Tuesday: null, Wednesday: null, Thursday: null, Friday: null, Saturday: null, Sunday: null };
+    if (!isMock) await setDoc(getDocRef('settings', 'schedule'), newAssigned);
+    else setAssignedPlans(newAssigned);
     showNotification("Schedule cleared.");
   };
 
-  // --- STATE: DAILY EXTRAS (For Diet Tab) ---
-  const [dailyExtras, setDailyExtras] = useState([]);
+  // --- CLOUD CRUD: DAILY EXTRAS ---
   const [activeExtraAdd, setActiveExtraAdd] = useState(false);
+  
+  const addExtraToToday = async (item, qty) => {
+    if (!qty || qty <= 0) return showNotification("Enter a valid quantity");
+    const ratio = qty / item.baseQuantity;
+    const addedItem = {
+      id: `ext${Date.now()}`, name: `${item.name} (${qty}${item.unit})`,
+      calories: Math.round(item.calories * ratio), protein: Math.round(item.protein * ratio * 10)/10,
+      carbs: Math.round(item.carbs * ratio * 10)/10, fat: Math.round(item.fat * ratio * 10)/10,
+    };
+    if (!isMock) await setDoc(getDocRef('dailyExtras', addedItem.id), addedItem);
+    else setDailyExtras([...dailyExtras, addedItem]);
+    setActiveExtraAdd(false); showNotification("Added extra food to today's log.");
+  };
 
-  // --- STATE: PROGRESS VIEW ---
+  const removeExtra = async (id) => {
+    if (!isMock) await deleteDoc(getDocRef('dailyExtras', id));
+    else setDailyExtras(dailyExtras.filter(e => e.id !== id));
+  };
+
+  // --- CLOUD CRUD: PROGRESS & HISTORY ---
   const [progressView, setProgressView] = useState('overview'); 
-  const [mockWorkoutHistory, setMockWorkoutHistory] = useState([
-    { 
-      id: 1, date: "2024-10-24", day: "Monday", exercise: "Goblet Squats", 
-      sets: [{ set: 1, weight: 15, reps: 12 }, { set: 2, weight: 15, reps: 10 }, { set: 3, weight: 15, reps: 9 }] 
-    },
-    { 
-      id: 2, date: "2024-10-24", day: "Monday", exercise: "Dumbbell Rows", 
-      sets: [{ set: 1, weight: 10, reps: 12 }, { set: 2, weight: 10, reps: 10 }, { set: 3, weight: 10, reps: 8 }] 
-    },
-    { 
-      id: 3, date: "2024-10-17", day: "Monday", exercise: "Goblet Squats", 
-      sets: [{ set: 1, weight: 12, reps: 15 }, { set: 2, weight: 12, reps: 12 }, { set: 3, weight: 12, reps: 10 }] 
-    },
-  ]);
 
-  const [mockMeasurementHistory, setMockMeasurementHistory] = useState([
-    { id: 1, date: "2024-10-24", weight: 49.5, waist: 26, hip: 35, arm: 10, hasPhoto: true }
-  ]);
-
-  const deleteWorkoutLog = (id) => {
-    setMockWorkoutHistory(mockWorkoutHistory.filter(h => h.id !== id));
+  const deleteWorkoutLog = async (id) => {
+    if (!isMock) await deleteDoc(getDocRef('workoutHistory', id));
+    else setMockWorkoutHistory(mockWorkoutHistory.filter(h => h.id !== id));
     showNotification("Workout log deleted.");
   };
 
-  const deleteMeasurementLog = (id) => {
-    setMockMeasurementHistory(mockMeasurementHistory.filter(h => h.id !== id));
+  const deleteMeasurementLog = async (id) => {
+    if (!isMock) await deleteDoc(getDocRef('measurementHistory', id));
+    else setMockMeasurementHistory(mockMeasurementHistory.filter(h => h.id !== id));
     showNotification("Measurement entry deleted.");
   };
 
-  // Group workout history by date
   const groupedHistory = mockWorkoutHistory.reduce((acc, log) => {
     if (!acc[log.date]) acc[log.date] = { day: log.day, exercises: [] };
     acc[log.date].exercises.push(log);
     return acc;
   }, {});
 
-  // Measurements state
   const [trackWeight, setTrackWeight] = useState('');
   const [trackWaist, setTrackWaist] = useState('');
   const [trackHip, setTrackHip] = useState('');
@@ -308,7 +414,19 @@ export default function GirlfriendFitnessApp() {
 
   const saveWeeklyProgress = async () => {
     if (!trackWeight) return showNotification("Please enter at least your weight!");
-    showNotification("Progress saved successfully! (Includes photo & measurements)");
+    const logId = Date.now().toString();
+    const dateStr = new Date().toISOString().split('T')[0];
+    const newLog = {
+      id: logId, date: dateStr, weight: parseFloat(trackWeight), hasPhoto: !!photoFile,
+      waist: trackWaist ? parseFloat(trackWaist) : null,
+      hip: trackHip ? parseFloat(trackHip) : null,
+      arm: trackArm ? parseFloat(trackArm) : null,
+    };
+    
+    if (!isMock) await setDoc(getDocRef('measurementHistory', logId), newLog);
+    else setMockMeasurementHistory([newLog, ...mockMeasurementHistory]);
+    
+    showNotification("Progress saved to cloud successfully!");
     setPhotoPreview(null); setPhotoFile(null); setTrackWeight(''); setTrackWaist(''); setTrackHip(''); setTrackArm('');
   };
 
@@ -317,38 +435,23 @@ export default function GirlfriendFitnessApp() {
   const actualToday = days[new Date().getDay()];
   const [selectedDay, setSelectedDay] = useState(actualToday);
 
-  // UPDATED: Added Sets and Rest Times to the routine
   const weeklyPlan = {
     Monday: { title: "Full-Body Gym", isRest: false, exercises: [
-      { name: "Goblet Squats", sets: 3, rest: 90 },
-      { name: "Dumbbell Rows", sets: 3, rest: 90 },
-      { name: "Dumbbell Chest Press", sets: 3, rest: 90 },
-      { name: "Planks (Seconds)", sets: 3, rest: 60 }
+      { name: "Goblet Squats", sets: 3, rest: 90 }, { name: "Dumbbell Rows", sets: 3, rest: 90 }, { name: "Dumbbell Chest Press", sets: 3, rest: 90 }, { name: "Planks (Seconds)", sets: 3, rest: 60 }
     ] },
-    Tuesday: { title: "Short Island Run", isRest: false, exercises: [
-      { name: "Run (Moderate Pace)", sets: 1, rest: 0 }
-    ] },
+    Tuesday: { title: "Short Island Run", isRest: false, exercises: [{ name: "Run (Moderate Pace)", sets: 1, rest: 0 }] },
     Wednesday: { title: "Lower-Body Gym", isRest: false, exercises: [
-      { name: "Romanian Deadlifts", sets: 3, rest: 90 },
-      { name: "Walking Lunges", sets: 3, rest: 90 },
-      { name: "Glute Bridges", sets: 3, rest: 60 },
-      { name: "Calf Raises", sets: 3, rest: 60 }
+      { name: "Romanian Deadlifts", sets: 3, rest: 90 }, { name: "Walking Lunges", sets: 3, rest: 90 }, { name: "Glute Bridges", sets: 3, rest: 60 }, { name: "Calf Raises", sets: 3, rest: 60 }
     ] },
     Thursday: { title: "Active Rest", isRest: true, exercises: [] },
     Friday: { title: "Upper-Body & Core", isRest: false, exercises: [
-      { name: "Overhead Press", sets: 3, rest: 90 },
-      { name: "Lat Pulldowns", sets: 3, rest: 90 },
-      { name: "Bicep Curls", sets: 3, rest: 60 },
-      { name: "Bicycle Crunches", sets: 3, rest: 60 }
+      { name: "Overhead Press", sets: 3, rest: 90 }, { name: "Lat Pulldowns", sets: 3, rest: 90 }, { name: "Bicep Curls", sets: 3, rest: 60 }, { name: "Bicycle Crunches", sets: 3, rest: 60 }
     ] },
-    Saturday: { title: "Long Run", isRest: false, exercises: [
-      { name: "Run (Distance)", sets: 1, rest: 0 }
-    ] },
+    Saturday: { title: "Long Run", isRest: false, exercises: [{ name: "Run (Distance)", sets: 1, rest: 0 }] },
     Sunday: { title: "Full Rest & Recovery", isRest: true, exercises: [] }
   };
   const selectedWorkout = weeklyPlan[selectedDay];
 
-  // Active inputs for the training tab
   const [workoutInputs, setWorkoutInputs] = useState({});
   const handleWorkoutInput = (exerciseName, setIndex, field, value) => {
     const newInputs = { ...workoutInputs };
@@ -358,9 +461,33 @@ export default function GirlfriendFitnessApp() {
     setWorkoutInputs(newInputs);
   };
 
-  const saveWorkoutSession = () => {
-    showNotification(`${selectedDay} session saved! Great job logging all sets.`);
-    setWorkoutInputs({});
+  const saveWorkoutSession = async () => {
+    const dateStr = new Date().toISOString().split('T')[0];
+    let loggedSomething = false;
+    
+    for (const exercise of selectedWorkout.exercises) {
+      const sets = workoutInputs[exercise.name];
+      if (sets && sets.length > 0) {
+        const validSets = sets.filter(s => s && (s.weight || s.reps));
+        if (validSets.length > 0) {
+           const logItem = {
+             id: `${dateStr}-${exercise.name.replace(/\s+/g, '')}`,
+             date: dateStr, day: selectedDay, exercise: exercise.name,
+             sets: validSets.map((s, i) => ({ set: i+1, weight: s.weight||0, reps: s.reps||0 }))
+           };
+           if (!isMock) await setDoc(getDocRef('workoutHistory', logItem.id), logItem);
+           else setMockWorkoutHistory(prev => [...prev.filter(p => p.id !== logItem.id), logItem]);
+           loggedSomething = true;
+        }
+      }
+    }
+    
+    if (loggedSomething) {
+        showNotification(`${selectedDay} cloud session saved!`);
+        setWorkoutInputs({});
+    } else {
+        showNotification("Please enter some weights/reps first.");
+    }
   };
 
   // --- AUTO-LOGGING MACROS (Today's Total) ---
@@ -375,18 +502,6 @@ export default function GirlfriendFitnessApp() {
   dailyExtras.forEach(ext => {
     consumed.calories += ext.calories; consumed.protein += ext.protein; consumed.carbs += ext.carbs; consumed.fat += ext.fat;
   });
-
-  const addExtraToToday = (item, qty) => {
-    if (!qty || qty <= 0) return showNotification("Enter a valid quantity");
-    const ratio = qty / item.baseQuantity;
-    const addedItem = {
-      logId: Date.now(), name: `${item.name} (${qty}${item.unit})`,
-      calories: Math.round(item.calories * ratio), protein: Math.round(item.protein * ratio * 10)/10,
-      carbs: Math.round(item.carbs * ratio * 10)/10, fat: Math.round(item.fat * ratio * 10)/10,
-    };
-    setDailyExtras([...dailyExtras, addedItem]);
-    setActiveExtraAdd(false); showNotification("Added extra food to today's log.");
-  };
 
   const calculateTargets = () => {
     let bmr = 0; let bodyFatPercentage = null; let calculationMethod = "";
@@ -419,7 +534,7 @@ export default function GirlfriendFitnessApp() {
     katchBMRText = Math.round(370 + (21.6 * lbm)) + " kcal";
   }
 
-  // --- NAVIGATION ITEMS (UPDATED NAMES) ---
+  // --- NAVIGATION ITEMS ---
   const navItems = [
     { id: 'training', label: 'WORKOUTS', icon: Activity, color: 'text-cyan-400' },
     { id: 'planner', label: 'MEAL BUILDER', icon: CalendarDays, color: 'text-purple-400' },
@@ -431,6 +546,78 @@ export default function GirlfriendFitnessApp() {
     { id: 'learn', label: 'LEARN', icon: BookOpen, color: 'text-indigo-400' },
   ];
 
+  // =========================================================================
+  // LOGIN SCREEN RENDER
+  // =========================================================================
+  if (authChecking) {
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white"><Activity className="animate-spin text-rose-500" size={48} /></div>;
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 font-sans selection:bg-rose-500 selection:text-white">
+        <div className="max-w-md w-full bg-slate-900 p-8 rounded-[2rem] border border-slate-800 shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><Lock size={120} /></div>
+          
+          <h1 className="text-4xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500 mb-2 relative z-10 text-center drop-shadow-lg">
+            ISLAND GAINS
+          </h1>
+          <p className="text-slate-400 text-center mb-8 relative z-10 text-sm">Please log in to access your dashboard.</p>
+
+          {loginError && (
+            <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-xl mb-6 text-sm font-bold text-center relative z-10">
+              {loginError}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4 relative z-10">
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block ml-2">Email Address</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500" size={18} />
+                <input 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-rose-500 transition-colors" 
+                  placeholder="marie@islandgains.com" 
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block ml-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500" size={18} />
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-12 text-white focus:outline-none focus:border-rose-500 transition-colors" 
+                  placeholder="••••••••" 
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="w-full mt-4 bg-gradient-to-r from-rose-600 to-orange-500 text-white py-4 rounded-2xl font-extrabold text-lg shadow-lg hover:scale-[1.02] transition-transform">
+              ACCESS ACCOUNT
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // MAIN APP RENDER
+  // =========================================================================
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col md:flex-row selection:bg-rose-500 pb-24 md:pb-0 relative">
       
@@ -444,11 +631,11 @@ export default function GirlfriendFitnessApp() {
       {/* DESKTOP SIDEBAR */}
       <div className="hidden md:flex flex-col w-64 bg-slate-900 border-r border-slate-800 fixed h-full z-50 p-6 overflow-y-auto scrollbar-hide">
         <h1 className="text-3xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500 mb-10 drop-shadow-lg">ISLAND GAINS</h1>
-        <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col gap-2 flex-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <button key={item.id} onClick={() => setActiveTab(item.id)}
+              <button key={item.id} onClick={() => switchTab(item.id)}
                 className={`flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 font-bold ${
                   activeTab === item.id ? 'bg-slate-800 shadow-lg border border-slate-700 text-white' : 'text-slate-500 hover:bg-slate-800/50 hover:text-slate-300'
                 }`}>
@@ -457,6 +644,10 @@ export default function GirlfriendFitnessApp() {
             );
           })}
         </nav>
+        {/* LOGOUT BUTTON */}
+        <button onClick={handleLogout} className="mt-auto text-slate-500 hover:text-red-400 text-sm font-bold flex items-center gap-2 pt-4 border-t border-slate-800">
+          Sign Out
+        </button>
       </div>
 
       {/* MAIN CONTENT AREA */}
@@ -474,6 +665,8 @@ export default function GirlfriendFitnessApp() {
               </div>
             </div>
           </div>
+          {/* Mobile Logout (Header) */}
+          <button onClick={handleLogout} className="md:hidden text-slate-500 hover:text-red-400 text-xs font-bold bg-slate-800 px-3 py-1.5 rounded-lg">Logout</button>
         </div>
 
         <div className="p-4 md:p-8 max-w-5xl w-full mx-auto">
@@ -581,6 +774,7 @@ export default function GirlfriendFitnessApp() {
                             <button onClick={() => setActiveAddingMealId(null)} className="absolute top-2 right-2 text-slate-500 hover:text-white"><X size={16}/></button>
                             <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Select from Database</h4>
                             <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
+                              {/* Combine Ingredients and Recipes for easy searching */}
                               {[...recipes, ...ingredients].map(ing => (
                                 <div key={ing.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800 gap-2">
                                   <div className="flex-1">
@@ -594,7 +788,8 @@ export default function GirlfriendFitnessApp() {
                                     <span className="text-[10px] text-slate-400 w-8">{ing.unit}</span>
                                     <button onClick={() => {
                                       const val = document.getElementById(`qty-${meal.id}-${ing.id}`).value || ing.baseQuantity;
-                                      addItemToDraftMeal(ing, val, !!ing.items);
+                                      addItemToDraftMeal(ing, val);
+                                      document.getElementById(`qty-${meal.id}-${ing.id}`).value = '';
                                     }} className="bg-purple-500 text-white p-1.5 rounded-md hover:bg-purple-600 transition-colors">
                                       <Plus size={14} />
                                     </button>
@@ -636,7 +831,6 @@ export default function GirlfriendFitnessApp() {
                       <div className="flex items-center gap-4 mb-4 md:mb-0">
                         <div className={`w-12 text-center text-xs font-bold uppercase ${isToday ? 'text-white' : 'text-slate-500'}`}>{day.substring(0,3)}</div>
                         <div>
-                           {/* SHOWS BOTH THE WORKOUT AND THE MEAL PLAN TOGETHER */}
                            <p className="text-xs font-bold text-cyan-400 mb-1 flex items-center gap-1"><Activity size={12}/> {workoutForDay.title}</p>
                            {currentAssignedId ? (
                              <div className="text-blue-400 text-sm font-bold flex items-center gap-1">
@@ -733,7 +927,7 @@ export default function GirlfriendFitnessApp() {
                   {!todaysPlan ? (
                     <div className="text-center p-6 border-2 border-dashed border-slate-800 rounded-3xl mb-6">
                       <p className="text-slate-500 font-bold">No plan assigned for today.</p>
-                      <button onClick={() => setActiveTab('assigner')} className="text-blue-400 text-xs font-bold mt-2 hover:underline">Go to Schedule</button>
+                      <button onClick={() => switchTab('assigner')} className="text-blue-400 text-xs font-bold mt-2 hover:underline">Go to Schedule</button>
                     </div>
                   ) : (
                     <div className="space-y-4 mb-8">
@@ -785,12 +979,12 @@ export default function GirlfriendFitnessApp() {
                     ) : (
                       <div className="space-y-2">
                         {dailyExtras.map(ext => (
-                          <div key={ext.logId} className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 flex justify-between items-center">
+                          <div key={ext.id} className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 flex justify-between items-center">
                             <div>
                               <p className="text-sm font-bold text-white">{ext.name}</p>
                               <p className="text-[10px] text-amber-400 font-bold">+{ext.calories} kcal</p>
                             </div>
-                            <button onClick={() => setDailyExtras(dailyExtras.filter(e => e.logId !== ext.logId))} className="text-slate-500 hover:text-red-400"><Trash2 size={16}/></button>
+                            <button onClick={() => removeExtra(ext.id)} className="text-slate-500 hover:text-red-400"><Trash2 size={16}/></button>
                           </div>
                         ))}
                       </div>
@@ -845,7 +1039,6 @@ export default function GirlfriendFitnessApp() {
                           )}
                         </div>
                         
-                        {/* SETS RENDERER */}
                         <div className="space-y-3">
                           {Array.from({ length: exercise.sets }).map((_, setIdx) => {
                             const currentVal = (workoutInputs[exercise.name] && workoutInputs[exercise.name][setIdx]) || {weight: '', reps: ''};
@@ -1108,29 +1301,33 @@ export default function GirlfriendFitnessApp() {
                     <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"><Dumbbell size={24} className="text-cyan-400"/> Workout Logs</h2>
                     
                     <div className="space-y-8">
-                      {Object.entries(groupedHistory).map(([date, data]) => (
-                        <div key={date} className="border-b border-slate-800 pb-8 last:border-0 last:pb-0">
-                          <h3 className="text-cyan-400 font-bold mb-4 flex items-center gap-2">
-                            <CalendarDays size={16} /> {date} ({data.day})
-                          </h3>
-                          <div className="space-y-3">
-                            {data.exercises.map(log => (
-                              <div key={log.id} className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 relative group">
-                                <button onClick={() => deleteWorkoutLog(log.id)} className="absolute top-3 right-3 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
-                                <p className="text-white font-bold mb-3">{log.exercise}</p>
-                                <div className="space-y-1">
-                                  {log.sets.map((s, i) => (
-                                    <div key={i} className="flex justify-between items-center text-sm border-b border-slate-700/30 last:border-0 pb-1 last:pb-0">
-                                      <span className="text-slate-400">Set {s.set}</span>
-                                      <span className="font-bold text-white">{s.weight} kg <span className="text-slate-500 font-normal mx-1">x</span> {s.reps}</span>
-                                    </div>
-                                  ))}
+                      {Object.keys(groupedHistory).length === 0 ? (
+                        <p className="text-slate-500 italic text-center p-6">No workouts logged yet.</p>
+                      ) : (
+                        Object.entries(groupedHistory).map(([date, data]) => (
+                          <div key={date} className="border-b border-slate-800 pb-8 last:border-0 last:pb-0">
+                            <h3 className="text-cyan-400 font-bold mb-4 flex items-center gap-2">
+                              <CalendarDays size={16} /> {date} ({data.day})
+                            </h3>
+                            <div className="space-y-3">
+                              {data.exercises.map(log => (
+                                <div key={log.id} className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 relative group">
+                                  <button onClick={() => deleteWorkoutLog(log.id)} className="absolute top-3 right-3 text-slate-500 hover:text-red-400 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
+                                  <p className="text-white font-bold mb-3">{log.exercise}</p>
+                                  <div className="space-y-1">
+                                    {log.sets.map((s, i) => (
+                                      <div key={i} className="flex justify-between items-center text-sm border-b border-slate-700/30 last:border-0 pb-1 last:pb-0">
+                                        <span className="text-slate-400">Set {s.set}</span>
+                                        <span className="font-bold text-white">{s.weight} kg <span className="text-slate-500 font-normal mx-1">x</span> {s.reps}</span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1141,21 +1338,25 @@ export default function GirlfriendFitnessApp() {
                   <div className="bg-slate-900 p-6 md:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
                     <h2 className="text-2xl font-bold mb-6 flex items-center gap-3"><Ruler size={24} className="text-emerald-400"/> Body Metrics</h2>
                     <div className="space-y-4">
-                      {mockMeasurementHistory.map((log) => (
-                        <div key={log.id} className="bg-slate-800 p-5 rounded-2xl border border-slate-700 flex flex-col gap-4 justify-between items-start relative group">
-                          <button onClick={() => deleteMeasurementLog(log.id)} className="absolute top-4 right-4 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
-                          <p className="text-xs text-emerald-400 font-bold">{log.date}</p>
-                          <div className="flex flex-wrap gap-4 md:gap-6 w-full">
-                            <div><p className="text-[10px] text-slate-400 font-bold">WEIGHT</p><p className="text-xl font-black text-white">{log.weight} kg</p></div>
-                            {log.waist && <div><p className="text-[10px] text-slate-400 font-bold">WAIST</p><p className="text-xl font-black text-white">{log.waist}"</p></div>}
-                            {log.hip && <div><p className="text-[10px] text-slate-400 font-bold">HIPS</p><p className="text-xl font-black text-white">{log.hip}"</p></div>}
-                            {log.arm && <div><p className="text-[10px] text-slate-400 font-bold">ARM</p><p className="text-xl font-black text-white">{log.arm}"</p></div>}
+                      {mockMeasurementHistory.length === 0 ? (
+                        <p className="text-slate-500 italic text-center p-6">No body metrics logged yet.</p>
+                      ) : (
+                        mockMeasurementHistory.map((log) => (
+                          <div key={log.id} className="bg-slate-800 p-5 rounded-2xl border border-slate-700 flex flex-col gap-4 justify-between items-start relative group">
+                            <button onClick={() => deleteMeasurementLog(log.id)} className="absolute top-4 right-4 text-slate-500 hover:text-red-400 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
+                            <p className="text-xs text-emerald-400 font-bold">{log.date}</p>
+                            <div className="flex flex-wrap gap-4 md:gap-6 w-full">
+                              <div><p className="text-[10px] text-slate-400 font-bold">WEIGHT</p><p className="text-xl font-black text-white">{log.weight} kg</p></div>
+                              {log.waist && <div><p className="text-[10px] text-slate-400 font-bold">WAIST</p><p className="text-xl font-black text-white">{log.waist}"</p></div>}
+                              {log.hip && <div><p className="text-[10px] text-slate-400 font-bold">HIPS</p><p className="text-xl font-black text-white">{log.hip}"</p></div>}
+                              {log.arm && <div><p className="text-[10px] text-slate-400 font-bold">ARM</p><p className="text-xl font-black text-white">{log.arm}"</p></div>}
+                            </div>
+                            {log.hasPhoto && (
+                              <button className="mt-2 bg-slate-900 text-emerald-400 text-xs font-bold px-4 py-2 rounded-full border border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-colors flex items-center gap-2"><Camera size={14} /> View Photo</button>
+                            )}
                           </div>
-                          {log.hasPhoto && (
-                            <button className="mt-2 bg-slate-900 text-emerald-400 text-xs font-bold px-4 py-2 rounded-full border border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-colors flex items-center gap-2"><Camera size={14} /> View Photo</button>
-                          )}
-                        </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1226,7 +1427,7 @@ export default function GirlfriendFitnessApp() {
                   </div>
                  </div>
 
-                 {/* CHAPTER 5: WEEKLY VOLUME (NEW) */}
+                 {/* CHAPTER 5 */}
                  <div className="bg-slate-900 p-6 md:p-8 rounded-[2rem] border border-slate-800 shadow-2xl h-full">
                   <h3 className="text-xl font-bold text-orange-400 mb-4 border-b border-slate-800 pb-3">5. Weekly Training Volume</h3>
                   <div className="space-y-4 text-slate-300 text-sm leading-relaxed">
@@ -1236,7 +1437,7 @@ export default function GirlfriendFitnessApp() {
                   </div>
                  </div>
 
-                 {/* CHAPTER 6 (Renumbered) */}
+                 {/* CHAPTER 6 */}
                  <div className="bg-slate-900 p-6 md:p-8 rounded-[2rem] border border-slate-800 shadow-2xl h-full">
                   <h3 className="text-xl font-bold text-purple-400 mb-4 border-b border-slate-800 pb-3">6. Muscle Fibers & Genetics</h3>
                   <div className="space-y-4 text-slate-300 text-sm leading-relaxed">
@@ -1255,7 +1456,7 @@ export default function GirlfriendFitnessApp() {
                   </div>
                  </div>
 
-                 {/* CHAPTER 7 (Renumbered) */}
+                 {/* CHAPTER 7 */}
                  <div className="bg-slate-900 p-6 md:p-8 rounded-[2rem] border border-slate-800 shadow-2xl md:col-span-2">
                   <h3 className="text-xl font-bold text-amber-400 mb-4 border-b border-slate-800 pb-3">7. The Science of the "Lean Bulk"</h3>
                   <div className="space-y-4 text-slate-300 text-sm leading-relaxed">
@@ -1278,7 +1479,7 @@ export default function GirlfriendFitnessApp() {
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
-              <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center justify-center gap-1 transition-all duration-300 min-w-[3rem] ${activeTab === item.id ? `${item.color} scale-110 -translate-y-1` : 'text-slate-500 hover:text-slate-400'}`}>
+              <button key={item.id} onClick={() => switchTab(item.id)} className={`flex flex-col items-center justify-center gap-1 transition-all duration-300 min-w-[3rem] ${activeTab === item.id ? `${item.color} scale-110 -translate-y-1` : 'text-slate-500 hover:text-slate-400'}`}>
                 <Icon size={20} />
                 <span className="text-[9px] font-bold tracking-wider">{item.label}</span>
               </button>
