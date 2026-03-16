@@ -1162,14 +1162,15 @@ export default function GirlfriendFitnessApp() {
                           {meal.items.map((item, idx) => (
                             <div key={idx} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-xl border border-slate-800 text-xs sm:text-sm gap-2"><span className="font-bold text-slate-300 truncate">{item.qty}{item.unit} {item.name}</span><div className="flex items-center gap-2 sm:gap-3 shrink-0"><span className="text-[8px] sm:text-[10px] text-slate-500">{item.calories} kcal</span><button onClick={() => removeDraftItem(meal.id, idx)} className="text-slate-600 hover:text-red-400"><Trash2 size={14}/></button></div></div>
                           ))}
+                          {meal.items.length === 0 && <p className="text-[10px] sm:text-xs text-slate-500 italic">No food added yet.</p>}
                         </div>
                         {activeAddingMealId === meal.id && (
                           <div className="mt-4 bg-slate-950 p-3 sm:p-4 rounded-xl border border-purple-500/50 animate-in fade-in zoom-in-95 duration-200 relative">
                             <button onClick={() => setActiveAddingMealId(null)} className="absolute top-2 right-2 text-slate-500 hover:text-white"><X size={16}/></button>
-                            <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase mb-3">Select from Database</h4>
+                            <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><Search size={14}/> Search Database</h4>
                             <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
                               {[...recipes, ...ingredients].map(ing => (
-                                <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" placeholder={ing.baseQuantity} id={`qty-${meal.id}-${ing.id}`} className="w-10 sm:w-14 bg-slate-800 text-white font-bold p-1 sm:p-1.5 rounded-md text-center text-[10px] sm:text-xs focus:outline-none focus:ring-1 ring-purple-500" /><span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span><button onClick={() => { const val = document.getElementById(`qty-${meal.id}-${ing.id}`).value || ing.baseQuantity; addItemToDraftMeal(ing, val); document.getElementById(`qty-${meal.id}-${ing.id}`).value = ''; }} className="bg-purple-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-purple-600 transition-colors"><Plus size={12} /></button></div></div>
+                                <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1 sm:gap-2 truncate">{ing.items ? <ChefHat size={10} className="text-yellow-400 shrink-0"/> : <Apple size={10} className="text-orange-400 shrink-0"/>} <span className="truncate">{ing.name}</span></p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" placeholder={ing.baseQuantity} id={`qty-${meal.id}-${ing.id}`} className="w-10 sm:w-14 bg-slate-800 text-white font-bold p-1 sm:p-1.5 rounded-md text-center text-[10px] sm:text-xs focus:outline-none focus:ring-1 ring-purple-500" /><span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span><button onClick={() => { const val = document.getElementById(`qty-${meal.id}-${ing.id}`).value || ing.baseQuantity; addItemToDraftMeal(ing, val); document.getElementById(`qty-${meal.id}-${ing.id}`).value = ''; }} className="bg-purple-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-purple-600 transition-colors"><Plus size={12} /></button></div></div>
                               ))}
                             </div>
                           </div>
@@ -1211,7 +1212,7 @@ export default function GirlfriendFitnessApp() {
                     </div>
                   )}
                   <div className="bg-slate-800/30 p-3 sm:p-4 rounded-2xl border border-slate-700/50 mb-6">
-                    <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><Search size={12} sm:size={14}/> Search Database</h4>
+                    <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><Search size={14}/> Search Database</h4>
                     <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
                       {ingredients.map(ing => (
                         <div key={ing.id} className="flex justify-between items-center bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" placeholder={ing.baseQuantity} id={`rec-qty-${ing.id}`} className="w-10 sm:w-16 bg-slate-800 text-white font-bold p-1 sm:p-2 rounded-lg text-center text-[10px] sm:text-sm focus:outline-none focus:ring-1 ring-yellow-500" /><button onClick={() => { const val = document.getElementById(`rec-qty-${ing.id}`).value || ing.baseQuantity; addIngredientToRecipe(ing, val); document.getElementById(`rec-qty-${ing.id}`).value = ''; }} className="bg-slate-800 p-1 sm:p-2 rounded-lg text-slate-400 hover:bg-yellow-500 hover:text-white transition-colors"><Plus size={14} /></button></div></div>
@@ -1259,7 +1260,7 @@ export default function GirlfriendFitnessApp() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-4">
                 {filteredIngredients.map((item) => (
                   <div key={item.id} className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-2xl flex flex-col justify-between group hover:border-orange-500/50 transition-colors relative">
-                    <div className="flex justify-between items-start mb-2 gap-2"><div className="min-w-0"><h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-400 font-medium">Per {item.baseQuantity} {item.unit}</p></div><div className="flex gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editIngredient(item)} className="p-1 sm:p-1.5 text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={12} sm:size={14}/></button><button onClick={() => deleteIngredient(item.id)} className="p-1 sm:p-1.5 text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={12} sm:size={14}/></button></div></div>
+                    <div className="flex justify-between items-start mb-2 gap-2"><div className="min-w-0"><h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-400 font-medium">Per {item.baseQuantity} {item.unit}</p></div><div className="flex gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editIngredient(item)} className="p-1 sm:p-1.5 text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={14}/></button><button onClick={() => deleteIngredient(item.id)} className="p-1 sm:p-1.5 text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={14}/></button></div></div>
                     <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold mt-1 flex-wrap"><span className="text-amber-400">{item.calories} kcal</span><span className="text-rose-400">P: {item.protein}g</span></div>
                   </div>
                 ))}
@@ -1290,7 +1291,7 @@ export default function GirlfriendFitnessApp() {
                               <option value="" disabled>Select workout...</option>
                               {workoutTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
                             </select>
-                            {workoutId && <button onClick={() => assignWorkoutToDay(day, null)} className="bg-slate-800 p-2.5 sm:p-3 rounded-xl text-slate-500 hover:text-red-400 transition-colors shrink-0"><Trash2 size={14} sm:size={16}/></button>}
+                            {workoutId && <button onClick={() => assignWorkoutToDay(day, null)} className="bg-slate-800 p-2.5 sm:p-3 rounded-xl text-slate-500 hover:text-red-400 transition-colors shrink-0"><Trash2 size={16}/></button>}
                           </div>
                         </div>
                         <div className="flex-1 max-w-none sm:max-w-xs lg:max-w-[240px]">
@@ -1300,7 +1301,7 @@ export default function GirlfriendFitnessApp() {
                               <option value="" disabled>Select meal plan...</option>
                               {mealTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                             </select>
-                            {mealId && <button onClick={() => assignMealToDay(day, null)} className="bg-slate-800 p-2.5 sm:p-3 rounded-xl text-slate-500 hover:text-red-400 transition-colors shrink-0"><Trash2 size={14} sm:size={16}/></button>}
+                            {mealId && <button onClick={() => assignMealToDay(day, null)} className="bg-slate-800 p-2.5 sm:p-3 rounded-xl text-slate-500 hover:text-red-400 transition-colors shrink-0"><Trash2 size={16}/></button>}
                           </div>
                         </div>
                       </div>
@@ -1317,11 +1318,11 @@ export default function GirlfriendFitnessApp() {
               {progressView === 'overview' && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button onClick={() => setProgressView('workouts')} className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] hover:bg-slate-800 transition-colors flex items-center justify-between group shadow-xl"><div className="flex items-center gap-3 sm:gap-4"><div className="bg-cyan-500/20 p-2.5 sm:p-3 rounded-2xl shrink-0"><Dumbbell className="text-cyan-400" size={24}/></div><div className="text-left min-w-0"><h3 className="font-bold text-white text-base sm:text-lg truncate">Workout Logs</h3><p className="text-xs sm:text-sm text-slate-400 truncate">Past weights & reps</p></div></div><ChevronRight className="text-slate-600 group-hover:text-cyan-400 transition-colors shrink-0" /></button>
-                    <button onClick={() => setProgressView('metrics')} className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] hover:bg-slate-800 transition-colors flex items-center justify-between group shadow-xl"><div className="flex items-center gap-3 sm:gap-4"><div className="bg-emerald-500/20 p-2.5 sm:p-3 rounded-2xl shrink-0"><Ruler className="text-emerald-400" size={24}/></div><div className="text-left min-w-0"><h3 className="font-bold text-white text-base sm:text-lg truncate">Body Metrics</h3><p className="text-xs sm:text-sm text-slate-400 truncate">Weight & measurements</p></div></div><ChevronRight className="text-slate-600 group-hover:text-emerald-400 transition-colors shrink-0" /></button>
+                    <button onClick={() => setProgressView('workouts')} className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] hover:bg-slate-800 transition-colors flex items-center justify-between group shadow-xl"><div className="flex items-center gap-3 sm:gap-4"><div className="bg-cyan-500/20 p-2.5 sm:p-3 rounded-2xl shrink-0"><Dumbbell size={24} className="text-cyan-400" /></div><div className="text-left min-w-0"><h3 className="font-bold text-white text-base sm:text-lg truncate">Workout Logs</h3><p className="text-xs sm:text-sm text-slate-400 truncate">Past weights & reps</p></div></div><ChevronRight className="text-slate-600 group-hover:text-cyan-400 transition-colors shrink-0" /></button>
+                    <button onClick={() => setProgressView('metrics')} className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] hover:bg-slate-800 transition-colors flex items-center justify-between group shadow-xl"><div className="flex items-center gap-3 sm:gap-4"><div className="bg-emerald-500/20 p-2.5 sm:p-3 rounded-2xl shrink-0"><Ruler size={24} className="text-emerald-400" /></div><div className="text-left min-w-0"><h3 className="font-bold text-white text-base sm:text-lg truncate">Body Metrics</h3><p className="text-xs sm:text-sm text-slate-400 truncate">Weight & measurements</p></div></div><ChevronRight className="text-slate-600 group-hover:text-emerald-400 transition-colors shrink-0" /></button>
                   </div>
                   <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl mt-6">
-                    <h2 className="text-xl sm:text-2xl font-bold mb-2 flex items-center gap-2 sm:gap-3"><Target size={20} sm:size={24} className="text-emerald-500"/> New Entry</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold mb-2 flex items-center gap-2 sm:gap-3"><Target size={24} className="text-emerald-500"/> New Entry</h2>
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
                       <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">WEIGHT (KG)</label><input type="number" value={trackWeight} onChange={(e)=>setTrackWeight(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0.0" /></div>
                       <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">WAIST (IN)</label><input type="number" value={trackWaist} onChange={(e)=>setTrackWaist(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0" /></div>
@@ -1336,16 +1337,16 @@ export default function GirlfriendFitnessApp() {
                 <div className="animate-in slide-in-from-right-8 duration-300">
                   <button onClick={() => setProgressView('overview')} className="flex items-center gap-1 sm:gap-2 text-slate-400 hover:text-white mb-4 sm:mb-6 font-bold text-xs sm:text-sm"><ChevronLeft size={16} /> Back to Overview</button>
                   <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
-                    <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3"><Dumbbell size={20} sm:size={24} className="text-cyan-400"/> Workout Logs</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3"><Dumbbell size={24} className="text-cyan-400"/> Workout Logs</h2>
                     <div className="space-y-6 sm:space-y-8">
                       {Object.keys(groupedHistory).length === 0 ? <p className="text-slate-500 italic text-center p-6 text-sm">No workouts logged yet.</p> : (
                         Object.entries(groupedHistory).map(([date, data]) => (
                           <div key={date} className="border-b border-slate-800 pb-6 sm:pb-8 last:border-0 last:pb-0">
-                            <h3 className="text-cyan-400 font-bold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base"><CalendarDays size={14} sm:size={16} /> {date} ({data.day})</h3>
+                            <h3 className="text-cyan-400 font-bold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base"><CalendarDays size={16} /> {date} ({data.day})</h3>
                             <div className="space-y-3">
                               {data.exercises.map(log => (
                                 <div key={log.id} className="bg-slate-800/50 p-3 sm:p-4 rounded-2xl border border-slate-700/50 relative group">
-                                  <button onClick={() => deleteWorkoutLog(log.id)} className="absolute top-2 sm:top-3 right-2 sm:right-3 text-slate-500 hover:text-red-400 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity p-1"><Trash2 size={14} sm:size={16} /></button>
+                                  <button onClick={() => deleteWorkoutLog(log.id)} className="absolute top-2 sm:top-3 right-2 sm:right-3 text-slate-500 hover:text-red-400 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity p-1"><Trash2 size={16} /></button>
                                   <p className="text-white font-bold mb-2 sm:mb-3 text-sm sm:text-base pr-6">{log.exercise}</p>
                                   <div className="space-y-1">
                                     {log.sets.map((s, i) => (
@@ -1366,18 +1367,19 @@ export default function GirlfriendFitnessApp() {
                  <div className="animate-in slide-in-from-right-8 duration-300">
                   <button onClick={() => setProgressView('overview')} className="flex items-center gap-1 sm:gap-2 text-slate-400 hover:text-white mb-4 sm:mb-6 font-bold text-xs sm:text-sm"><ChevronLeft size={16} /> Back to Overview</button>
                   <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
-                    <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3"><Ruler size={20} sm:size={24} className="text-emerald-400"/> Body Metrics</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3"><Ruler size={24} className="text-emerald-400"/> Body Metrics</h2>
                     <div className="space-y-4">
                       {mockMeasurementHistory.length === 0 ? <p className="text-slate-500 italic text-center p-6 text-sm">No metrics logged yet.</p> : (
                         mockMeasurementHistory.map((log) => (
                           <div key={log.id} className="bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-700 flex flex-col gap-3 sm:gap-4 justify-between items-start relative group">
-                            <button onClick={() => deleteMeasurementLog(log.id)} className="absolute top-3 right-3 text-slate-500 hover:text-red-400 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity p-1"><Trash2 size={14} sm:size={16} /></button>
+                            <button onClick={() => deleteMeasurementLog(log.id)} className="absolute top-3 right-3 text-slate-500 hover:text-red-400 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity p-1"><Trash2 size={16} /></button>
                             <p className="text-[10px] sm:text-xs text-emerald-400 font-bold">{log.date}</p>
                             <div className="flex flex-wrap gap-3 sm:gap-6 w-full">
                               <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">WEIGHT</p><p className="text-lg sm:text-xl font-black text-white">{log.weight} kg</p></div>
                               {log.waist && <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">WAIST</p><p className="text-lg sm:text-xl font-black text-white">{log.waist}"</p></div>}
                               {log.hip && <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">HIPS</p><p className="text-lg sm:text-xl font-black text-white">{log.hip}"</p></div>}
                             </div>
+                            {log.hasPhoto && <button className="mt-1 bg-slate-900 text-emerald-400 text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-colors flex items-center gap-1 sm:gap-2"><Camera size={14} /> View Photo</button>}
                           </div>
                         ))
                       )}
@@ -1392,7 +1394,7 @@ export default function GirlfriendFitnessApp() {
           {mainTab === 'learn' && (
              <div className="space-y-6 animate-in fade-in duration-500">
                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-6 sm:p-8 rounded-[2rem] border border-indigo-500/30 shadow-2xl text-center">
-                  <BookOpen size={40} sm:size={48} className="text-indigo-400 mx-auto mb-3 sm:mb-4" />
+                  <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-400 mx-auto mb-3 sm:mb-4" />
                   <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">The Masterclass</h2>
                   <p className="text-indigo-200 text-xs sm:text-sm">Understand the 'why' behind your program.</p>
                </div>
