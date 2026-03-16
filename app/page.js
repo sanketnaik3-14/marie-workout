@@ -722,6 +722,15 @@ export default function GirlfriendFitnessApp() {
     consumed.calories += ext.calories; consumed.protein += ext.protein; consumed.carbs += ext.carbs; consumed.fat += ext.fat;
   });
 
+  // --- Dynamic Math for Learn Tab ---
+  const mifflinBMR = Math.round((10 * weight) + (6.25 * height) - (5 * age) - 161);
+  const harrisBMR = Math.round(447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age));
+  let katchBMRText = "Requires Body Fat % (Tape measures)";
+  if (calcResults && calcResults.bodyFat) {
+    const lbm = weight * (1 - calcResults.bodyFat / 100);
+    katchBMRText = Math.round(370 + (21.6 * lbm)) + " kcal";
+  }
+
   // =========================================================================
   // LOGIN SCREEN RENDER
   // =========================================================================
