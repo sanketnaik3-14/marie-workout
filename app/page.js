@@ -1202,17 +1202,7 @@ export default function GirlfriendFitnessApp() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                     {recipes.map(recipe => (
                       <div key={recipe.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col">
-                        <div className="p-5 sm:p-6 pb-4 relative">
-                          <div className="absolute top-0 right-0 p-4 opacity-5"><Utensils size={80} /></div>
-                          <h3 className="font-bold text-white text-lg sm:text-xl mb-1 relative z-10">{recipe.name}</h3>
-                          <p className="text-[10px] sm:text-xs text-slate-400 mb-4 relative z-10 truncate">{recipe.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ')}</p>
-                          <div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold relative z-10 flex-wrap">
-                            <div className="text-amber-400">{recipe.calories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div>
-                            <div className="text-rose-400">{recipe.protein}g <span className="text-[8px] sm:text-[10px] text-slate-500">PRO</span></div>
-                            <div className="text-cyan-400">{recipe.carbs}g <span className="text-[8px] sm:text-[10px] text-slate-500">CARB</span></div>
-                            <div className="text-yellow-400">{recipe.fat}g <span className="text-[8px] sm:text-[10px] text-slate-500">FAT</span></div>
-                          </div>
-                        </div>
+                        <div className="p-5 sm:p-6 pb-4 relative"><div className="absolute top-0 right-0 p-4 opacity-5"><Utensils size={80} /></div><h3 className="font-bold text-white text-lg sm:text-xl mb-1 relative z-10">{recipe.name}</h3><p className="text-[10px] sm:text-xs text-slate-400 mb-4 relative z-10 truncate">{recipe.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ')}</p><div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold relative z-10 flex-wrap"><div className="text-amber-400">{recipe.calories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div></div></div>
                         <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto relative z-10"><button onClick={() => editRecipe(recipe)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button><button onClick={() => deleteRecipe(recipe.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button></div>
                       </div>
                     ))}
@@ -1279,7 +1269,7 @@ export default function GirlfriendFitnessApp() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-4">
                 {filteredIngredients.map((item) => (
                   <div key={item.id} className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-2xl flex flex-col justify-between group hover:border-orange-500/50 transition-colors relative">
-                    <div className="flex justify-between items-start mb-2 gap-2"><div className="min-w-0"><h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-400 font-medium">Per {item.baseQuantity} {item.unit}</p></div><div className="flex gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editIngredient(item)} className="p-1 sm:p-1.5 text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={12} sm:size={14}/></button><button onClick={() => deleteIngredient(item.id)} className="p-1 sm:p-1.5 text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={12} sm:size={14}/></button></div></div>
+                    <div className="flex justify-between items-start mb-2 gap-2"><div className="min-w-0"><h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-400 font-medium">Per {item.baseQuantity} {item.unit}</p></div><div className="flex gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editIngredient(item)} className="p-1 sm:p-1.5 text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={14}/></button><button onClick={() => deleteIngredient(item.id)} className="p-1 sm:p-1.5 text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={14}/></button></div></div>
                     <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold mt-1 flex-wrap">
                       <span className="text-amber-400">{item.calories} kcal</span>
                       <span className="text-rose-400">P: {item.protein}g</span>
@@ -1403,7 +1393,6 @@ export default function GirlfriendFitnessApp() {
                               {log.waist && <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">WAIST</p><p className="text-lg sm:text-xl font-black text-white">{log.waist}"</p></div>}
                               {log.hip && <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">HIPS</p><p className="text-lg sm:text-xl font-black text-white">{log.hip}"</p></div>}
                             </div>
-                            {log.hasPhoto && <button className="mt-1 bg-slate-900 text-emerald-400 text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-colors flex items-center gap-1 sm:gap-2"><Camera size={14} /> View Photo</button>}
                           </div>
                         ))
                       )}
@@ -1418,7 +1407,7 @@ export default function GirlfriendFitnessApp() {
           {mainTab === 'learn' && (
              <div className="space-y-6 animate-in fade-in duration-500">
                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-6 sm:p-8 rounded-[2rem] border border-indigo-500/30 shadow-2xl text-center">
-                  <BookOpen className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-400 mx-auto mb-3 sm:mb-4" />
+                  <BookOpen size={48} className="text-indigo-400 mx-auto mb-3 sm:mb-4" />
                   <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">The Masterclass</h2>
                   <p className="text-indigo-200 text-xs sm:text-sm">Understand the 'why' behind your program.</p>
                </div>
