@@ -238,14 +238,19 @@ export default function GirlfriendFitnessApp() {
   useEffect(() => {
     if (user) {
       const savedMain = localStorage.getItem('islandGainsMainTab');
-      if (savedMain) setMainTab(savedMain);
+      const isValidMain = MAIN_TABS.some(t => t.id === savedMain);
+      if (savedMain && isValidMain) setMainTab(savedMain);
+      else setMainTab('today');
       
-      const savedWorkoutSub = localStorage.getItem('islandGainsWorkoutSub');
-      const savedDietSub = localStorage.getItem('islandGainsDietSub');
-      setSubTabs(prev => ({
-        workout: savedWorkoutSub || prev.workout,
-        diet: savedDietSub || prev.diet
-      }));
+      const savedLibSub = localStorage.getItem('islandGainsLibrarySub');
+      const savedProfSub = localStorage.getItem('islandGainsProfileSub');
+      const isValidLib = SUB_TABS.library.some(t => t.id === savedLibSub);
+      const isValidProf = SUB_TABS.profile.some(t => t.id === savedProfSub);
+      
+      setSubTabs({
+        library: isValidLib ? savedLibSub : 'routines',
+        profile: isValidProf ? savedProfSub : 'macros'
+      });
     }
   }, [user]);
 
