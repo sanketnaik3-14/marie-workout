@@ -12,10 +12,6 @@ const withPWA = withPWAInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // This silences the Turbopack warning you saw in the Vercel logs
-  experimental: {
-    turbopack: {},
-  },
 };
 
 export default withPWA(nextConfig);
