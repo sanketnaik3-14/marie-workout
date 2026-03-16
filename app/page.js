@@ -5,8 +5,8 @@ import {
   Activity, Utensils, Calendar, Calculator, ChevronRight, 
   Save, BookOpen, Target, Camera, ImagePlus, CheckCircle2, 
   History, ChevronLeft, Dumbbell, Ruler, Apple, Plus, PieChart, 
-  Trash2, ChefHat, Search, X, CalendarDays, CalendarClock, Compass,
-  Edit3, Timer, Lock, User, Eye, EyeOff, ClipboardList
+  Trash2, ChefHat, Search, X, CalendarDays, Compass,
+  Edit3, Timer, Lock, User, Eye, EyeOff, ClipboardList, Sun, Folder
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -107,25 +107,23 @@ const DEFAULT_SCHEDULE = {
 // --- NAVIGATION ARCHITECTURE (MD3 EXPRESSIVE) ---
 // ============================================================================
 const MAIN_TABS = [
-  { id: 'schedule', label: 'Schedule', icon: CalendarClock, color: 'text-blue-400', bgHover: 'hover:bg-blue-500/10', activeBg: 'bg-blue-500/20' },
-  { id: 'workout', label: 'Workout', icon: Activity, color: 'text-cyan-400', bgHover: 'hover:bg-cyan-500/10', activeBg: 'bg-cyan-500/20' },
-  { id: 'diet', label: 'Diet', icon: Utensils, color: 'text-rose-400', bgHover: 'hover:bg-rose-500/10', activeBg: 'bg-rose-500/20' },
+  { id: 'today', label: 'Today', icon: Sun, color: 'text-rose-400', bgHover: 'hover:bg-rose-500/10', activeBg: 'bg-rose-500/20' },
+  { id: 'library', label: 'Library', icon: Folder, color: 'text-indigo-400', bgHover: 'hover:bg-indigo-500/10', activeBg: 'bg-indigo-500/20' },
   { id: 'progress', label: 'History', icon: History, color: 'text-emerald-400', bgHover: 'hover:bg-emerald-500/10', activeBg: 'bg-emerald-500/20' },
-  { id: 'learn', label: 'Learn', icon: BookOpen, color: 'text-indigo-400', bgHover: 'hover:bg-indigo-500/10', activeBg: 'bg-indigo-500/20' },
+  { id: 'profile', label: 'Profile', icon: User, color: 'text-amber-400', bgHover: 'hover:bg-amber-500/10', activeBg: 'bg-amber-500/20' },
 ];
 
 const SUB_TABS = {
-  workout: [
-    { id: 'session', label: "Today's Session", icon: Dumbbell },
-    { id: 'routines', label: "My Routines", icon: ClipboardList },
-    { id: 'library', label: "Exercise Library", icon: Search },
-  ],
-  diet: [
-    { id: 'log', label: "Today's Log", icon: PieChart },
-    { id: 'targets', label: "Macro Goals", icon: Target },
+  library: [
+    { id: 'routines', label: "Routines", icon: ClipboardList },
+    { id: 'exercises', label: "Exercises", icon: Dumbbell },
     { id: 'plans', label: "Meal Plans", icon: CalendarDays },
     { id: 'recipes', label: "Recipes", icon: ChefHat },
-    { id: 'foods', label: "Food Database", icon: Apple },
+    { id: 'ingredients', label: "Foods", icon: Apple },
+  ],
+  profile: [
+    { id: 'macros', label: "Macro Goals", icon: Target },
+    { id: 'learn', label: "Masterclass", icon: BookOpen },
   ]
 };
 
@@ -139,8 +137,8 @@ export default function GirlfriendFitnessApp() {
   const [loginError, setLoginError] = useState('');
 
   // --- NAVIGATION STATE ---
-  const [mainTab, setMainTab] = useState('schedule');
-  const [subTabs, setSubTabs] = useState({ workout: 'session', diet: 'log' });
+  const [mainTab, setMainTab] = useState('today');
+  const [subTabs, setSubTabs] = useState({ library: 'routines', profile: 'macros' });
   const [notification, setNotification] = useState('');
   const showNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(''), 3000); };
 
@@ -585,13 +583,6 @@ export default function GirlfriendFitnessApp() {
     showNotification(`Workout assigned to ${day}`);
   };
 
-  const clearAllSchedule = async () => {
-    const emptyObj = { Monday: null, Tuesday: null, Wednesday: null, Thursday: null, Friday: null, Saturday: null, Sunday: null };
-    if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: emptyObj, workouts: emptyObj });
-    else { setAssignedMeals(emptyObj); setAssignedWorkouts(emptyObj); }
-    showNotification("Complete schedule cleared.");
-  };
-
   // ============================================================================
   // --- CLOUD CRUD: DAILY DIET LOG (Extras) ---
   // ============================================================================
@@ -741,7 +732,7 @@ export default function GirlfriendFitnessApp() {
   };
 
   // Dynamic Diet Selection
-  const todaysPlanId = assignedMeals[actualToday];
+  const todaysPlanId = assignedMeals[selectedDay];
   const todaysPlan = mealTemplates.find(t => t.id === todaysPlanId);
 
   let consumed = { calories: 0, protein: 0, carbs: 0, fat: 0 };
@@ -852,11 +843,11 @@ export default function GirlfriendFitnessApp() {
         </div>
 
         {/* SUB-TABS NAV */}
-        {SUB_TABS[mainTab] && (
+        {SUB_TABS[mainTab] && SUB_TABS[mainTab].length > 0 && (
            <div className="px-4 py-3 border-b border-slate-800/50 flex gap-2 overflow-x-auto scrollbar-hide bg-slate-950/50">
               {SUB_TABS[mainTab].map(tab => {
                 const isActive = subTabs[mainTab] === tab.id;
-                const activeColor = mainTab === 'workout' ? 'bg-cyan-500 text-slate-950' : 'bg-rose-500 text-slate-950';
+                const activeColor = mainTab === 'library' ? 'bg-indigo-500 text-slate-950' : mainTab === 'profile' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-white';
                 const TabIcon = tab.icon;
                 return (
                   <button key={tab.id} onClick={() => switchSubTab(mainTab, tab.id)} className={`px-5 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all flex items-center gap-2 ${isActive ? activeColor : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>
@@ -869,9 +860,9 @@ export default function GirlfriendFitnessApp() {
 
         <div className="p-4 md:p-8 max-w-5xl w-full mx-auto overflow-x-hidden">
 
-          {/* === WORKOUT HUB (Session) === */}
-          {mainTab === 'workout' && subTabs.workout === 'session' && (
-            <div className="animate-in fade-in duration-500">
+          {/* === TODAY HUB === */}
+          {mainTab === 'today' && (
+            <div className="animate-in fade-in duration-500 space-y-6">
               <div className="mb-6 overflow-x-auto pb-4 scrollbar-hide w-full">
                 <div className="flex gap-3 min-w-max px-2">
                   {days.map((day) => {
@@ -886,6 +877,92 @@ export default function GirlfriendFitnessApp() {
                   })}
                 </div>
               </div>
+              
+              {/* ASSIGNMENTS */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 shadow-xl">
+                  <div className="flex items-center gap-2 min-w-0"><Activity className="text-cyan-400 shrink-0" size={18}/><span className="text-[10px] font-bold text-slate-400 uppercase truncate">Workout</span></div>
+                  <select value={assignedWorkouts[selectedDay] || ''} onChange={(e) => assignWorkoutToDay(selectedDay, e.target.value)} className="bg-slate-950 text-white text-xs font-bold p-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-cyan-500 w-32 sm:w-40 truncate"><option value="">Rest Day</option>{workoutTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}</select>
+                </div>
+                <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 shadow-xl">
+                  <div className="flex items-center gap-2 min-w-0"><Utensils className="text-rose-400 shrink-0" size={18}/><span className="text-[10px] font-bold text-slate-400 uppercase truncate">Meal Plan</span></div>
+                  <select value={assignedMeals[selectedDay] || ''} onChange={(e) => assignMealToDay(selectedDay, e.target.value)} className="bg-slate-950 text-white text-xs font-bold p-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-rose-500 w-32 sm:w-40 truncate"><option value="">No Plan</option>{mealTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
+                </div>
+              </div>
+
+              {/* THE DIET LOG */}
+              {calcResults && (
+                <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
+                  {(() => {
+                    const isOver = consumed.calories >= calcResults.calories;
+                    const diff = Math.abs(calcResults.calories - consumed.calories);
+                    const mainColor = isOver ? 'text-indigo-400' : 'text-amber-400';
+                    const mainBg = isOver ? 'bg-indigo-500' : 'bg-amber-500';
+                    return (
+                      <div className="mb-8">
+                        <div className={`p-3 sm:p-4 rounded-2xl mb-4 text-center font-bold text-xs sm:text-sm ${isOver ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-slate-800 text-slate-400'}`}>
+                          {isOver ? `Goal Reached! +${diff} kcal buffer.` : `${diff} kcal remaining for today.`}
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-center">
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${mainBg}`} style={{ width: `${Math.min(100, (consumed.calories / calcResults.calories) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING KCAL</p><p className={`text-xl sm:text-2xl font-black ${mainColor}`}>{Math.round(calcResults.calories - consumed.calories)}</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.calories}</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.protein / calcResults.protein) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING PRO</p><p className="text-xl sm:text-2xl font-black text-rose-400">{Math.round(calcResults.protein - consumed.protein)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.protein}g</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.carbs / calcResults.carbs) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING CARB</p><p className="text-xl sm:text-2xl font-black text-cyan-400">{Math.round(calcResults.carbs - consumed.carbs)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.carbs}g</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.fat / calcResults.fat) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING FAT</p><p className="text-xl sm:text-2xl font-black text-yellow-400">{Math.round(calcResults.fat - consumed.fat)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.fat}g</p></div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider flex items-center justify-between"><span>Scheduled Plan</span>{todaysPlan && <span className="text-purple-400 bg-purple-500/10 px-2 py-1 rounded text-[10px] truncate max-w-[120px] sm:max-w-none">{todaysPlan.name}</span>}</h3>
+                  {!todaysPlan ? (
+                    <div className="text-center p-6 border-2 border-dashed border-slate-800 rounded-3xl mb-6"><p className="text-sm text-slate-500 font-bold">No meal plan assigned for {selectedDay}.</p></div>
+                  ) : (
+                    <div className="space-y-3 sm:space-y-4 mb-8">
+                      {todaysPlan.meals.map(meal => (
+                        <div key={meal.id} className="bg-slate-950 border border-slate-800 p-3 sm:p-4 rounded-2xl">
+                          <h4 className="font-bold text-white text-sm sm:text-base mb-2">{meal.name}</h4>
+                          {meal.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-xs sm:text-sm mb-1 last:mb-0 gap-2"><span className="text-slate-300 truncate">{item.qty}{item.unit} {item.name}</span><span className="text-slate-500 text-[10px] sm:text-xs font-bold shrink-0">{item.calories} kcal</span></div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="border-t border-slate-800 pt-6">
+                    <div className="flex justify-between items-center mb-4"><h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">Extra Additions</h3><button onClick={() => setActiveExtraAdd(!activeExtraAdd)} className="text-emerald-400 hover:text-emerald-300 text-[10px] sm:text-xs font-bold bg-emerald-500/10 px-2 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"><Plus size={14} /> Add Extra</button></div>
+                    {activeExtraAdd && (
+                      <div className="mb-4 bg-slate-950 p-3 sm:p-4 rounded-xl border border-emerald-500/50 animate-in fade-in zoom-in-95 duration-200">
+                        <h4 className="text-[10px] sm:text-xs font-bold text-slate-500 mb-3">Add outside of plan:</h4>
+                        <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
+                          {[...recipes, ...ingredients].map(ing => (
+                            <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2">
+                              <p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p>
+                              <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                                <input type="number" placeholder={ing.baseQuantity} id={`extra-${ing.id}`} className="w-12 sm:w-14 bg-slate-800 text-white font-bold p-1 rounded-md text-center text-[10px] sm:text-xs focus:outline-none" />
+                                <span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span>
+                                <button onClick={() => { const val = document.getElementById(`extra-${ing.id}`).value || ing.baseQuantity; addExtraToToday(ing, val); }} className="bg-emerald-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-emerald-600 transition-colors"><Plus size={12} /></button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {dailyExtras.length === 0 ? (
+                      <p className="text-[10px] sm:text-xs text-slate-500 italic text-center p-4">You haven't deviated from the plan.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {dailyExtras.map(ext => (
+                          <div key={ext.id} className="bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-700/50 flex justify-between items-center gap-2">
+                            <div className="min-w-0"><p className="text-xs sm:text-sm font-bold text-white truncate">{ext.name}</p><p className="text-[8px] sm:text-[10px] text-amber-400 font-bold">+{ext.calories} kcal</p></div>
+                            <button onClick={() => removeExtra(ext.id)} className="text-slate-500 hover:text-red-400 p-1 shrink-0"><Trash2 size={14}/></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* THE WORKOUT SESSION */}
               <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
                 <div className="flex justify-between items-start mb-6">
                   <div>
@@ -926,8 +1003,8 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
-          {/* === WORKOUT HUB (Routines) === */}
-          {mainTab === 'workout' && subTabs.workout === 'routines' && (
+          {/* === LIBRARY HUB (Routines) === */}
+          {mainTab === 'library' && subTabs.library === 'routines' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               {!isCreatingRoutine ? (
                 <>
@@ -1001,8 +1078,8 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
-          {/* === WORKOUT HUB (Library) === */}
-          {mainTab === 'workout' && subTabs.workout === 'library' && (
+          {/* === LIBRARY HUB (Exercises) === */}
+          {mainTab === 'library' && subTabs.library === 'exercises' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
                 {exerciseTargets.map(cat => (
@@ -1038,8 +1115,8 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
-          {/* === DIET HUB (Targets) === */}
-          {mainTab === 'diet' && subTabs.diet === 'targets' && (
+          {/* === PROFILE HUB (Macros) === */}
+          {mainTab === 'profile' && subTabs.profile === 'macros' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               <div className="flex justify-between items-end mb-4">
                 <div><h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><Target className="text-rose-400" size={28} /> Macro Goals</h2><p className="text-slate-400 text-xs sm:text-sm mt-1">Tune your engine and adjust your fuel.</p></div>
@@ -1087,84 +1164,8 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
-          {/* === DIET HUB (Log) === */}
-          {mainTab === 'diet' && subTabs.diet === 'log' && (
-             <div className="space-y-6 animate-in fade-in duration-500">
-              {calcResults && (
-                <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
-                  {(() => {
-                    const isOver = consumed.calories >= calcResults.calories;
-                    const diff = Math.abs(calcResults.calories - consumed.calories);
-                    const mainColor = isOver ? 'text-indigo-400' : 'text-amber-400';
-                    const mainBg = isOver ? 'bg-indigo-500' : 'bg-amber-500';
-                    return (
-                      <div className="mb-8">
-                        <div className={`p-3 sm:p-4 rounded-2xl mb-4 text-center font-bold text-xs sm:text-sm ${isOver ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-slate-800 text-slate-400'}`}>
-                          {isOver ? `Goal Reached! +${diff} kcal buffer.` : `${diff} kcal remaining for today.`}
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-center">
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${mainBg}`} style={{ width: `${Math.min(100, (consumed.calories / calcResults.calories) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">KCAL</p><p className={`text-xl sm:text-2xl font-black ${mainColor}`}>{consumed.calories}</p></div>
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.protein / calcResults.protein) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">PRO</p><p className="text-xl sm:text-2xl font-black text-rose-400">{Math.round(consumed.protein)}g</p></div>
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.carbs / calcResults.carbs) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">CARB</p><p className="text-xl sm:text-2xl font-black text-cyan-400">{Math.round(consumed.carbs)}g</p></div>
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.fat / calcResults.fat) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">FAT</p><p className="text-xl sm:text-2xl font-black text-yellow-400">{Math.round(consumed.fat)}g</p></div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider flex items-center justify-between"><span>Scheduled Plan</span>{todaysPlan && <span className="text-purple-400 bg-purple-500/10 px-2 py-1 rounded text-[10px] truncate max-w-[120px] sm:max-w-none">{todaysPlan.name}</span>}</h3>
-                  {!todaysPlan ? (
-                    <div className="text-center p-6 border-2 border-dashed border-slate-800 rounded-3xl mb-6"><p className="text-sm text-slate-500 font-bold">No meal plan assigned for today.</p></div>
-                  ) : (
-                    <div className="space-y-3 sm:space-y-4 mb-8">
-                      {todaysPlan.meals.map(meal => (
-                        <div key={meal.id} className="bg-slate-950 border border-slate-800 p-3 sm:p-4 rounded-2xl">
-                          <h4 className="font-bold text-white text-sm sm:text-base mb-2">{meal.name}</h4>
-                          {meal.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-xs sm:text-sm mb-1 last:mb-0 gap-2"><span className="text-slate-300 truncate">{item.qty}{item.unit} {item.name}</span><span className="text-slate-500 text-[10px] sm:text-xs font-bold shrink-0">{item.calories} kcal</span></div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="border-t border-slate-800 pt-6">
-                    <div className="flex justify-between items-center mb-4"><h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">Extra Additions</h3><button onClick={() => setActiveExtraAdd(!activeExtraAdd)} className="text-emerald-400 hover:text-emerald-300 text-[10px] sm:text-xs font-bold bg-emerald-500/10 px-2 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"><Plus size={14} /> Add Extra</button></div>
-                    {activeExtraAdd && (
-                      <div className="mb-4 bg-slate-950 p-3 sm:p-4 rounded-xl border border-emerald-500/50 animate-in fade-in zoom-in-95 duration-200">
-                        <h4 className="text-[10px] sm:text-xs font-bold text-slate-500 mb-3">Add outside of plan:</h4>
-                        <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
-                          {[...recipes, ...ingredients].map(ing => (
-                            <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2">
-                              <p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p>
-                              <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                                <input type="number" placeholder={ing.baseQuantity} id={`extra-${ing.id}`} className="w-12 sm:w-14 bg-slate-800 text-white font-bold p-1 rounded-md text-center text-[10px] sm:text-xs focus:outline-none" />
-                                <span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span>
-                                <button onClick={() => { const val = document.getElementById(`extra-${ing.id}`).value || ing.baseQuantity; addExtraToToday(ing, val); }} className="bg-emerald-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-emerald-600 transition-colors"><Plus size={12} /></button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {dailyExtras.length === 0 ? (
-                      <p className="text-[10px] sm:text-xs text-slate-500 italic text-center p-4">You haven't deviated from the plan today.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {dailyExtras.map(ext => (
-                          <div key={ext.id} className="bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-700/50 flex justify-between items-center gap-2">
-                            <div className="min-w-0"><p className="text-xs sm:text-sm font-bold text-white truncate">{ext.name}</p><p className="text-[8px] sm:text-[10px] text-amber-400 font-bold">+{ext.calories} kcal</p></div>
-                            <button onClick={() => removeExtra(ext.id)} className="text-slate-500 hover:text-red-400 p-1 shrink-0"><Trash2 size={14}/></button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-             </div>
-          )}
-
-          {/* === DIET HUB (Plans) === */}
-          {mainTab === 'diet' && subTabs.diet === 'plans' && (
+          {/* === LIBRARY HUB (Plans) === */}
+          {mainTab === 'library' && subTabs.library === 'plans' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               {!isCreatingTemplate ? (
                 <>
@@ -1190,6 +1191,18 @@ export default function GirlfriendFitnessApp() {
                 <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
                   <button onClick={() => { setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
                   <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingTemplateId ? 'Edit Template' : 'Template Builder'}</h3>
+                  
+                  {calcResults && (
+                    <div className="mb-6 bg-slate-950/50 p-4 rounded-2xl border border-slate-800 shadow-inner">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-center">
+                        <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${templateTotals.calories > calcResults.calories ? 'bg-indigo-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, (templateTotals.calories / calcResults.calories) * 100)}%` }}></div><p className="text-[8px] sm:text-[9px] text-slate-400 font-bold mb-1">REMAINING KCAL</p><p className={`text-lg sm:text-xl font-black ${templateTotals.calories > calcResults.calories ? 'text-indigo-400' : 'text-amber-400'}`}>{Math.round(calcResults.calories - templateTotals.calories)}</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.calories}</p></div>
+                        <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-500" style={{ width: `${Math.min(100, (templateTotals.protein / calcResults.protein) * 100)}%` }}></div><p className="text-[8px] sm:text-[9px] text-slate-400 font-bold mb-1">REMAINING PRO</p><p className="text-lg sm:text-xl font-black text-rose-400">{Math.round(calcResults.protein - templateTotals.protein)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.protein}g</p></div>
+                        <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-500" style={{ width: `${Math.min(100, (templateTotals.carbs / calcResults.carbs) * 100)}%` }}></div><p className="text-[8px] sm:text-[9px] text-slate-400 font-bold mb-1">REMAINING CARB</p><p className="text-lg sm:text-xl font-black text-cyan-400">{Math.round(calcResults.carbs - templateTotals.carbs)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.carbs}g</p></div>
+                        <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500" style={{ width: `${Math.min(100, (templateTotals.fat / calcResults.fat) * 100)}%` }}></div><p className="text-[8px] sm:text-[9px] text-slate-400 font-bold mb-1">REMAINING FAT</p><p className="text-lg sm:text-xl font-black text-yellow-400">{Math.round(calcResults.fat - templateTotals.fat)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.fat}g</p></div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div><label className="text-xs font-bold text-slate-500 mb-1 block">TEMPLATE NAME</label><input type="text" placeholder="e.g. Cardio Day Meals" value={draftTemplateName} onChange={(e)=>setDraftTemplateName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-purple-500 text-sm sm:text-base" /></div>
                     <div><label className="text-xs font-bold text-slate-500 mb-1 block">NUMBER OF MEALS</label><select value={draftMealCount} onChange={(e)=>handleMealCountChange(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-purple-500 text-sm sm:text-base">{[1,2,3,4,5,6].map(num => <option key={num} value={num}>{num} Meals</option>)}</select></div>
@@ -1224,8 +1237,8 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
-          {/* === DIET HUB (Recipes) === */}
-          {mainTab === 'diet' && subTabs.diet === 'recipes' && (
+          {/* === LIBRARY HUB (Recipes) === */}
+          {mainTab === 'library' && subTabs.library === 'recipes' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               {!isCreatingRecipe ? (
                 <>
@@ -1265,8 +1278,8 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
-          {/* === DIET HUB (Foods) === */}
-          {mainTab === 'diet' && subTabs.diet === 'foods' && (
+          {/* === LIBRARY HUB (Ingredients) === */}
+          {mainTab === 'library' && subTabs.library === 'ingredients' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               <div className="flex justify-between items-end mb-4"><div><h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><Apple className="text-orange-400" size={28} /> Database</h2></div></div>
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
@@ -1309,50 +1322,6 @@ export default function GirlfriendFitnessApp() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {/* ==================== SCHEDULE HUB (Assigner) ==================== */}
-          {mainTab === 'schedule' && (
-            <div className="animate-in fade-in duration-500 space-y-6">
-              <div className="flex justify-between items-end mb-4">
-                <div><h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><CalendarClock className="text-blue-400" size={28} /> Schedule</h2><p className="text-slate-400 text-xs sm:text-sm mt-1">Assign meals and workouts to days.</p></div>
-                <button onClick={clearAllSchedule} className="text-[10px] sm:text-xs font-bold text-red-400 hover:text-red-300 bg-red-500/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors">Reset All</button>
-              </div>
-              <div className="bg-slate-900 p-4 sm:p-6 rounded-[2rem] border border-slate-800 shadow-2xl space-y-3 sm:space-y-4">
-                {days.map(day => {
-                  const mealId = assignedMeals[day];
-                  const workoutId = assignedWorkouts[day];
-                  const isToday = day === actualToday;
-                  return (
-                    <div key={day} className={`flex flex-col lg:flex-row lg:items-center justify-between p-4 sm:p-5 rounded-2xl border transition-colors gap-3 sm:gap-4 ${isToday ? 'bg-slate-800/80 border-slate-600' : 'bg-slate-950 border-slate-800'}`}>
-                      <div className="flex items-center gap-3 sm:gap-4"><div className={`w-10 sm:w-14 text-center text-xs sm:text-sm font-bold uppercase ${isToday ? 'text-white' : 'text-slate-500'}`}>{day.substring(0,3)}</div></div>
-                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full lg:w-auto flex-1 lg:justify-end">
-                        <div className="flex-1 max-w-none sm:max-w-xs lg:max-w-[240px]">
-                          <label className="text-[8px] sm:text-[9px] font-bold text-cyan-400 uppercase tracking-wider mb-1 block ml-1"><Activity size={10} className="inline mr-1"/>Workout</label>
-                          <div className="flex gap-2">
-                            <select value={workoutId || ''} onChange={(e) => assignWorkoutToDay(day, e.target.value)} className="w-full bg-slate-800 text-white text-xs sm:text-sm font-bold p-2.5 sm:p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-cyan-500 appearance-none truncate">
-                              <option value="" disabled>Select workout...</option>
-                              {workoutTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-                            </select>
-                            {workoutId && <button onClick={() => assignWorkoutToDay(day, null)} className="bg-slate-800 p-2.5 sm:p-3 rounded-xl text-slate-500 hover:text-red-400 transition-colors shrink-0"><Trash2 size={16}/></button>}
-                          </div>
-                        </div>
-                        <div className="flex-1 max-w-none sm:max-w-xs lg:max-w-[240px]">
-                          <label className="text-[8px] sm:text-[9px] font-bold text-rose-400 uppercase tracking-wider mb-1 block ml-1"><Utensils size={10} className="inline mr-1"/>Meal Plan</label>
-                          <div className="flex gap-2">
-                            <select value={mealId || ''} onChange={(e) => assignMealToDay(day, e.target.value)} className="w-full bg-slate-800 text-white text-xs sm:text-sm font-bold p-2.5 sm:p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-rose-500 appearance-none truncate">
-                              <option value="" disabled>Select meal plan...</option>
-                              {mealTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                            </select>
-                            {mealId && <button onClick={() => assignMealToDay(day, null)} className="bg-slate-800 p-2.5 sm:p-3 rounded-xl text-slate-500 hover:text-red-400 transition-colors shrink-0"><Trash2 size={16}/></button>}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           )}
@@ -1453,8 +1422,8 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
-          {/* ==================== LEARN HUB ==================== */}
-          {mainTab === 'learn' && (
+          {/* ==================== PROFILE HUB (Learn) ==================== */}
+          {mainTab === 'profile' && subTabs.profile === 'learn' && (
              <div className="space-y-6 animate-in fade-in duration-500">
                <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-6 sm:p-8 rounded-[2rem] border border-indigo-500/30 shadow-2xl text-center">
                   <BookOpen size={48} className="text-indigo-400 mx-auto mb-3 sm:mb-4" />
