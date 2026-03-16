@@ -45,25 +45,9 @@ const DEFAULT_INGREDIENTS = [
   { id: 'i7', name: "Peanut Butter", category: "Fats", baseQuantity: 1, unit: "Tbsp", protein: 4, carbs: 3, fat: 8, calories: 95 },
 ];
 
-const DEFAULT_RECIPES = [
-  {
-    id: 'r1', name: "Power Banana Shake", baseQuantity: 1, unit: "Serving",
-    calories: 310, protein: 29, carbs: 37, fat: 10,
-    items: [{ name: "Whey Protein", qty: 1, unit: "Scoop", calories: 120, protein: 25, carbs: 3, fat: 2 }, { name: "Peanut Butter", qty: 1, unit: "Tbsp", calories: 95, protein: 4, carbs: 3, fat: 8 }]
-  }
-];
+const DEFAULT_RECIPES = [];
 
-const DEFAULT_TEMPLATES = [
-  {
-    id: 't1', name: "Heavy Lifting Fuel", mealCount: 4, totalCalories: 1530, totalProtein: 102, totalCarbs: 185, totalFat: 42,
-    meals: [
-      { id: 'm1', name: 'Meal 1', items: [{ id: 'r1', name: 'Power Banana Shake', qty: 1, unit: 'Serving', calories: 310, protein: 29, carbs: 37, fat: 10 }] },
-      { id: 'm2', name: 'Meal 2', items: [{ id: 'i1', name: 'Chicken Breast', qty: 150, unit: 'g', calories: 247, protein: 46, carbs: 0, fat: 5 }] },
-      { id: 'm3', name: 'Meal 3', items: [{ id: 'i4', name: 'White Rice (Cooked)', qty: 150, unit: 'g', calories: 195, protein: 4, carbs: 42, fat: 0 }] },
-      { id: 'm4', name: 'Meal 4', items: [{ id: 'i2', name: 'Whole Egg', qty: 2, unit: 'Large', calories: 144, protein: 12, carbs: 1, fat: 10 }] }
-    ]
-  }
-];
+const DEFAULT_TEMPLATES = [];
 
 const DEFAULT_EXERCISES = [
   { id: 'e1', name: "Goblet Squats", target: "Legs & Glutes", equipment: "Dumbbell" },
@@ -82,25 +66,11 @@ const DEFAULT_EXERCISES = [
   { id: 'e14', name: "Run (Distance)", target: "Cardio", equipment: "None" }
 ];
 
-const DEFAULT_WORKOUT_TEMPLATES = [
-  { id: 'wt1', title: "Full-Body Gym", isRest: false, exercises: [
-    { id: 'e1', name: "Goblet Squats", sets: 3, rest: 90 }, { id: 'e2', name: "Dumbbell Rows", sets: 3, rest: 90 }, { id: 'e3', name: "Dumbbell Chest Press", sets: 3, rest: 90 }, { id: 'e4', name: "Planks", sets: 3, rest: 60 }
-  ]},
-  { id: 'wt2', title: "Short Island Run", isRest: false, exercises: [{ id: 'e5', name: "Run (Moderate Pace)", sets: 1, rest: 0 }] },
-  { id: 'wt3', title: "Lower-Body Gym", isRest: false, exercises: [
-    { id: 'e6', name: "Romanian Deadlifts", sets: 3, rest: 90 }, { id: 'e7', name: "Walking Lunges", sets: 3, rest: 90 }, { id: 'e8', name: "Glute Bridges", sets: 3, rest: 60 }, { id: 'e9', name: "Calf Raises", sets: 3, rest: 60 }
-  ]},
-  { id: 'wt4', title: "Active Rest", isRest: true, exercises: [] },
-  { id: 'wt5', title: "Upper-Body & Core", isRest: false, exercises: [
-    { id: 'e10', name: "Overhead Press", sets: 3, rest: 90 }, { id: 'e11', name: "Lat Pulldowns", sets: 3, rest: 90 }, { id: 'e12', name: "Bicep Curls", sets: 3, rest: 60 }, { id: 'e13', name: "Bicycle Crunches", sets: 3, rest: 60 }
-  ]},
-  { id: 'wt6', title: "Long Run", isRest: false, exercises: [{ id: 'e14', name: "Run (Distance)", sets: 1, rest: 0 }] },
-  { id: 'wt7', title: "Full Rest & Recovery", isRest: true, exercises: [] }
-];
+const DEFAULT_WORKOUT_TEMPLATES = [];
 
 const DEFAULT_SCHEDULE = {
-  meals: { Monday: 't1', Tuesday: null, Wednesday: 't1', Thursday: null, Friday: 't1', Saturday: null, Sunday: null },
-  workouts: { Monday: 'wt1', Tuesday: 'wt2', Wednesday: 'wt3', Thursday: 'wt4', Friday: 'wt5', Saturday: 'wt6', Sunday: 'wt7' }
+  meals: { Monday: null, Tuesday: null, Wednesday: null, Thursday: null, Friday: null, Saturday: null, Sunday: null },
+  workouts: { Monday: null, Tuesday: null, Wednesday: null, Thursday: null, Friday: null, Saturday: null, Sunday: null }
 };
 
 // ============================================================================
