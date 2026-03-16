@@ -698,7 +698,7 @@ export default function GirlfriendFitnessApp() {
 
   // Dynamic Workout Selection
   const activeRoutineId = assignedWorkouts[selectedDay];
-  const selectedWorkout = workoutTemplates.find(t => t.id === activeRoutineId) || { title: "No Routine Assigned", isRest: true, exercises: [] };
+  const selectedWorkout = workoutTemplates.find(t => t.id === activeRoutineId) || { title: "No Workout Assigned", isRest: true, exercises: [] };
 
   const [workoutInputs, setWorkoutInputs] = useState({});
   const handleWorkoutInput = (exerciseName, setIndex, field, value) => {
@@ -887,7 +887,7 @@ export default function GirlfriendFitnessApp() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 shadow-xl">
                   <div className="flex items-center gap-2 min-w-0"><Activity className="text-cyan-400 shrink-0" size={18}/><span className="text-[10px] font-bold text-slate-400 uppercase truncate">Workout</span></div>
-                  <select value={assignedWorkouts[selectedDay] || ''} onChange={(e) => assignWorkoutToDay(selectedDay, e.target.value)} className="bg-slate-950 text-white text-xs font-bold p-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-cyan-500 w-32 sm:w-40 truncate"><option value="">Rest Day</option>{workoutTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}</select>
+                  <select value={assignedWorkouts[selectedDay] || ''} onChange={(e) => assignWorkoutToDay(selectedDay, e.target.value)} className="bg-slate-950 text-white text-xs font-bold p-2.5 rounded-xl border border-slate-700 focus:outline-none focus:border-cyan-500 w-32 sm:w-40 truncate"><option value="">No Workout</option>{workoutTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}</select>
                 </div>
                 <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex items-center justify-between gap-3 shadow-xl">
                   <div className="flex items-center gap-2 min-w-0"><Utensils className="text-rose-400 shrink-0" size={18}/><span className="text-[10px] font-bold text-slate-400 uppercase truncate">Meal Plan</span></div>
@@ -976,7 +976,7 @@ export default function GirlfriendFitnessApp() {
                   </div>
                 </div>
                 {selectedWorkout.isRest || selectedWorkout.exercises.length === 0 ? (
-                  <div className="text-center p-8 bg-slate-800/50 rounded-3xl border border-slate-700/50 mt-4"><p className="text-lg sm:text-xl font-bold text-slate-300">Rest Day.</p></div>
+                  <div className="text-center p-8 bg-slate-800/50 rounded-3xl border border-slate-700/50 mt-4"><p className="text-lg sm:text-xl font-bold text-slate-300">{!activeRoutineId ? "No workout scheduled." : "Rest Day."}</p></div>
                 ) : (
                   <div className="space-y-6 mt-6">
                     {selectedWorkout.exercises.map((ex, idx) => (
