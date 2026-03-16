@@ -11,7 +11,7 @@ import {
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
@@ -204,6 +204,15 @@ export default function GirlfriendFitnessApp() {
 
   // --- FIREBASE AUTH LOGIC ---
   useEffect(() => {
+    if (isMock) {
+      try {
+        const savedMock = localStorage.getItem('islandGainsMockUser');
+        if (savedMock) setUser(JSON.parse(savedMock));
+      } catch(e) {}
+      setAuthChecking(false);
+      return;
+    }
+
     try {
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         setUser(currentUser);
@@ -221,7 +230,13 @@ export default function GirlfriendFitnessApp() {
     setLoginError('');
     if (!email || !password) return setLoginError("Please enter email and password.");
     try {
-      if (isMock) { setUser({ email, uid: 'mock-user-123' }); return; }
+      if (isMock) {
+        const mockUser = { email, uid: 'mock-user-123' };
+        localStorage.setItem('islandGainsMockUser', JSON.stringify(mockUser));
+        setUser(mockUser);
+        return;
+      }
+      await setPersistence(auth, browserLocalPersistence);
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
       setLoginError("Incorrect email or password.");
@@ -230,6 +245,7 @@ export default function GirlfriendFitnessApp() {
 
   const handleLogout = async () => {
     try { await signOut(auth); } catch (e) {}
+    if (isMock) localStorage.removeItem('islandGainsMockUser');
     setUser(null);
     localStorage.removeItem('islandGainsMainTab');
   };
