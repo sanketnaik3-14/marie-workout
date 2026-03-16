@@ -1655,6 +1655,45 @@ export default function GirlfriendFitnessApp() {
                     <p><strong className="text-white">Straight Sets:</strong> Doing a set, resting, doing another. This is clinically proven to be the best way to build a foundation safely compared to advanced sets.</p>
                   </div>
                  </div>
+                 
+                 {/* CHAPTER 5 */}
+                 <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl h-full">
+                  <h3 className="text-lg sm:text-xl font-bold text-orange-400 mb-3 sm:mb-4 border-b border-slate-800 pb-2 sm:pb-3">5. Weekly Training Volume</h3>
+                  <div className="space-y-3 sm:space-y-4 text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    <p><strong className="text-white">How many sets per week?</strong> Sports science generally recommends <strong>10 to 20 sets per muscle group per week</strong> for maximum hypertrophy. However, context matters!</p>
+                    <p><strong className="text-white">The Sweet Spot:</strong> If you are new to lifting or focusing on a lean bulk, jumping straight to 20 sets is "junk volume." It causes excessive inflammation, forcing your body to spend all its surplus calories repairing damage instead of building new muscle. That's why this program starts you in the highly effective <strong>6 to 10 sets per week</strong> range.</p>
+                    <p><strong className="text-white">When to increase volume:</strong> As you become an advanced lifter, 6-10 sets might no longer trigger growth. When your strength plateaus for several weeks, you can gradually push closer to that 10-20 set range by adding a 4th set to your exercises or adding a new isolation movement!</p>
+                  </div>
+                 </div>
+
+                 {/* CHAPTER 6 */}
+                 <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl h-full">
+                  <h3 className="text-lg sm:text-xl font-bold text-purple-400 mb-3 sm:mb-4 border-b border-slate-800 pb-2 sm:pb-3">6. Muscle Fibers & Genetics</h3>
+                  <div className="space-y-3 sm:space-y-4 text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    <p>Why are some people naturally great marathon runners, while others are incredibly strong powerlifters? It comes down to genetics and muscle fibers.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <strong className="text-red-400 block mb-1">Type 1 (Slow-Twitch)</strong>
+                        These fibers use oxygen efficiently for continuous, extended muscle contractions. Think of a marathon runner. They are very hard to fatigue, but they do not produce much power, and they do not grow very large.
+                      </div>
+                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <strong className="text-blue-400 block mb-1">Type 2 (Fast-Twitch)</strong>
+                        These fibers fire quickly and generate explosive force. Think of a sprinter or bodybuilder. They fatigue very quickly, but they are the fibers most responsible for <strong>visible muscle growth</strong> (hypertrophy).
+                      </div>
+                    </div>
+                    <p className="mt-2">Lifting weights in the 8-12 rep range targets those Type 2 Fast-Twitch fibers, forcing them to adapt and grow larger to handle the heavy load next time!</p>
+                  </div>
+                 </div>
+
+                 {/* CHAPTER 7 */}
+                 <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl md:col-span-2">
+                  <h3 className="text-lg sm:text-xl font-bold text-amber-400 mb-3 sm:mb-4 border-b border-slate-800 pb-2 sm:pb-3">7. The Science of the "Lean Bulk"</h3>
+                  <div className="space-y-3 sm:space-y-4 text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    <p>To gain weight, you must consume more calories than your TDEE. This is a <strong>Caloric Surplus</strong>. If you eat a massive 1,000-calorie surplus (a "dirty bulk"), your body will build muscle, but it will store the remaining 700 calories as pure body fat.</p>
+                    <p>Instead, we use a <strong>Lean Bulk (+250 kcal)</strong>. This tiny surplus provides exactly enough energy to fuel muscle synthesis without spilling over into excess fat storage.</p>
+                    <p><strong className="text-white">When to change your calories:</strong> Weigh yourself weekly. The goal is to gain about 0.5kg to 1kg per month. If your weight stalls and stays exactly the same for two full weeks, congratulations—your metabolism has adapted! Your body is burning more calories because it has more muscle. At this point, simply add <strong>+100 to +150 calories</strong> to your daily target (usually in the form of extra carbs like an extra cup of rice) to keep growing.</p>
+                  </div>
+                 </div>
                </div>
              </div>
           )}
