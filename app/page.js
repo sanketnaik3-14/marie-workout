@@ -340,7 +340,6 @@ export default function GirlfriendFitnessApp() {
         if (p.proteinPerKg) setProteinPerKg(p.proteinPerKg);
         if (p.fatPerKg) setFatPerKg(p.fatPerKg);
         if (p.caloricSurplus) setCaloricSurplus(p.caloricSurplus);
-        // calcResults auto-calculates via useEffect
       }
     });
     unsubs.push(unsubProfile);
@@ -480,7 +479,6 @@ export default function GirlfriendFitnessApp() {
     if (!isMock) await deleteDoc(getDocRef('mealTemplates', id));
     else setMealTemplates(mealTemplates.filter(t => t.id !== id));
     
-    // Cleanup schedule
     const newAssigned = {...assignedMeals};
     Object.keys(newAssigned).forEach(k => { if(newAssigned[k] === id) newAssigned[k] = null; });
     if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: newAssigned, workouts: assignedWorkouts });
@@ -705,13 +703,10 @@ export default function GirlfriendFitnessApp() {
         }
       }
     }
-    
     if (loggedSomething) {
         showNotification(`${selectedDay} cloud session saved!`);
         setWorkoutInputs({});
-    } else {
-        showNotification("Please enter some weights/reps first.");
-    }
+    } else showNotification("Please enter some weights/reps first.");
   };
 
   // Dynamic Diet Selection
@@ -760,7 +755,6 @@ export default function GirlfriendFitnessApp() {
   // MAIN APP RENDER
   // =========================================================================
   return (
-    // Fixed overflow horizontally with overflow-x-hidden on the root
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col md:flex-row selection:bg-rose-500 overflow-x-hidden relative">
       
       {/* NOTIFICATION TOAST */}
@@ -770,7 +764,7 @@ export default function GirlfriendFitnessApp() {
         </div>
       )}
 
-      {/* DESKTOP SIDEBAR (MD3 Navigation Rail) */}
+      {/* DESKTOP SIDEBAR */}
       <div className="hidden md:flex flex-col w-64 bg-slate-900 border-r border-slate-800 fixed h-full z-50 p-6 overflow-y-auto scrollbar-hide">
         <h1 className="text-3xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500 mb-10 drop-shadow-lg">ISLAND GAINS</h1>
         <nav className="flex flex-col gap-2 flex-1">
@@ -779,21 +773,15 @@ export default function GirlfriendFitnessApp() {
             const isActive = mainTab === item.id;
             return (
               <div key={item.id} className="flex flex-col">
-                <button onClick={() => switchMainTab(item.id)}
-                  className={`flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 font-bold text-sm ${
-                    isActive ? `bg-slate-800 shadow-lg border border-slate-700 text-white` : `text-slate-500 ${item.bgHover} hover:text-slate-300`
-                  }`}>
+                <button onClick={() => switchMainTab(item.id)} className={`flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 font-bold text-sm ${isActive ? `bg-slate-800 shadow-lg border border-slate-700 text-white` : `text-slate-500 ${item.bgHover} hover:text-slate-300`}`}>
                   <Icon size={18} className={isActive ? item.color : ''} /> {item.label}
                 </button>
-                {/* Desktop Sub-Tabs Indented */}
                 {isActive && SUB_TABS[item.id] && (
                   <div className="ml-6 mt-1 flex flex-col gap-1 border-l-2 border-slate-800 pl-3">
                      {SUB_TABS[item.id].map(sub => {
                        const isSubActive = subTabs[item.id] === sub.id;
                        return (
-                         <button key={sub.id} onClick={() => switchSubTab(item.id, sub.id)} className={`text-left text-xs font-semibold py-2 px-3 rounded-xl transition-colors ${isSubActive ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-300'}`}>
-                           {sub.label}
-                         </button>
+                         <button key={sub.id} onClick={() => switchSubTab(item.id, sub.id)} className={`text-left text-xs font-semibold py-2 px-3 rounded-xl transition-colors ${isSubActive ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-300'}`}>{sub.label}</button>
                        )
                      })}
                   </div>
@@ -802,14 +790,13 @@ export default function GirlfriendFitnessApp() {
             );
           })}
         </nav>
-        {/* LOGOUT BUTTON */}
         <button onClick={handleLogout} className="mt-auto text-slate-500 hover:text-red-400 text-sm font-bold flex items-center gap-2 pt-4 border-t border-slate-800">Sign Out</button>
       </div>
 
-      {/* MAIN CONTENT AREA - Padding bottom accounts for mobile nav */}
+      {/* MAIN CONTENT AREA */}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen relative pb-28 md:pb-0 w-full max-w-[100vw]">
         
-        {/* GLOBAL COMPASS (Sticky Header) */}
+        {/* HEADER */}
         <div className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 p-4 sticky top-0 z-40 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="bg-indigo-500/20 p-2 rounded-xl hidden sm:block shrink-0"><Compass className="text-indigo-400" size={24}/></div>
@@ -824,15 +811,16 @@ export default function GirlfriendFitnessApp() {
           <button onClick={handleLogout} className="md:hidden shrink-0 text-slate-500 hover:text-red-400 text-xs font-bold bg-slate-800 px-3 py-1.5 rounded-lg ml-2">Logout</button>
         </div>
 
-        {/* MD3 SECONDARY NAVIGATION (Sub-tabs for Mobile & Desktop context) */}
+        {/* SUB-TABS NAV */}
         {SUB_TABS[mainTab] && (
            <div className="px-4 py-3 border-b border-slate-800/50 flex gap-2 overflow-x-auto scrollbar-hide bg-slate-950/50">
               {SUB_TABS[mainTab].map(tab => {
                 const isActive = subTabs[mainTab] === tab.id;
                 const activeColor = mainTab === 'workout' ? 'bg-cyan-500 text-slate-950' : 'bg-rose-500 text-slate-950';
+                const TabIcon = tab.icon;
                 return (
                   <button key={tab.id} onClick={() => switchSubTab(mainTab, tab.id)} className={`px-5 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all flex items-center gap-2 ${isActive ? activeColor : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>
-                    <tab.icon size={14} /> {tab.label}
+                    <TabIcon size={14} /> {tab.label}
                   </button>
                 )
               })}
@@ -841,7 +829,7 @@ export default function GirlfriendFitnessApp() {
 
         <div className="p-4 md:p-8 max-w-5xl w-full mx-auto overflow-x-hidden">
 
-          {/* ==================== WORKOUT HUB ==================== */}
+          {/* === WORKOUT HUB (Session) === */}
           {mainTab === 'workout' && subTabs.workout === 'session' && (
             <div className="animate-in fade-in duration-500">
               <div className="mb-6 overflow-x-auto pb-4 scrollbar-hide w-full">
@@ -858,7 +846,6 @@ export default function GirlfriendFitnessApp() {
                   })}
                 </div>
               </div>
-
               <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
                 <div className="flex justify-between items-start mb-6">
                   <div>
@@ -866,38 +853,25 @@ export default function GirlfriendFitnessApp() {
                     <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">{selectedWorkout.title}</h2>
                   </div>
                 </div>
-
                 {selectedWorkout.isRest || selectedWorkout.exercises.length === 0 ? (
-                  <div className="text-center p-8 bg-slate-800/50 rounded-3xl border border-slate-700/50 mt-4">
-                    <p className="text-lg sm:text-xl font-bold text-slate-300">Rest Day / No Workout Assigned.</p>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-2">Muscles grow outside the gym, not inside it.</p>
-                  </div>
+                  <div className="text-center p-8 bg-slate-800/50 rounded-3xl border border-slate-700/50 mt-4"><p className="text-lg sm:text-xl font-bold text-slate-300">Rest Day.</p></div>
                 ) : (
                   <div className="space-y-6 mt-6">
-                    {selectedWorkout.exercises.map((exercise, idx) => (
+                    {selectedWorkout.exercises.map((ex, idx) => (
                       <div key={idx} className="bg-slate-800/40 p-4 sm:p-5 rounded-3xl border border-slate-700/50">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 border-b border-slate-700/50 pb-3 gap-2">
-                          <h3 className="text-lg sm:text-xl font-bold text-white">{exercise.name}</h3>
-                          {exercise.rest > 0 && (
-                            <span className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-lg w-max">
-                              <Timer size={14}/> Rest: {exercise.rest}s
-                            </span>
-                          )}
+                          <h3 className="text-lg sm:text-xl font-bold text-white">{ex.name}</h3>
+                          {ex.rest > 0 && <span className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-lg w-max"><Timer size={14}/> Rest: {ex.rest}s</span>}
                         </div>
-                        
                         <div className="space-y-3">
-                          {Array.from({ length: exercise.sets }).map((_, setIdx) => {
-                            const currentVal = (workoutInputs[exercise.name] && workoutInputs[exercise.name][setIdx]) || {weight: '', reps: ''};
+                          {Array.from({ length: ex.sets }).map((_, setIdx) => {
+                            const cVal = (workoutInputs[ex.name] && workoutInputs[ex.name][setIdx]) || {weight: '', reps: ''};
                             return (
                               <div key={setIdx} className="flex items-center justify-between gap-2 sm:gap-4">
                                 <span className="text-xs sm:text-sm font-bold text-slate-400 w-10 sm:w-12">Set {setIdx + 1}</span>
                                 <div className="flex gap-2 sm:gap-3 flex-1 justify-end">
-                                  <div className="relative w-20 sm:w-32">
-                                    <input type="number" placeholder="kg" value={currentVal.weight} onChange={(e) => handleWorkoutInput(exercise.name, setIdx, 'weight', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 sm:p-2.5 font-black text-white text-center focus:outline-none focus:border-cyan-500 transition-colors text-sm sm:text-base" />
-                                  </div>
-                                  <div className="relative w-20 sm:w-32">
-                                    <input type="number" placeholder="reps" value={currentVal.reps} onChange={(e) => handleWorkoutInput(exercise.name, setIdx, 'reps', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 sm:p-2.5 font-black text-white text-center focus:outline-none focus:border-cyan-500 transition-colors text-sm sm:text-base" />
-                                  </div>
+                                  <div className="relative w-20 sm:w-32"><input type="number" placeholder="kg" value={cVal.weight} onChange={(e) => handleWorkoutInput(ex.name, setIdx, 'weight', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 sm:p-2.5 font-black text-white text-center focus:outline-none focus:border-cyan-500 transition-colors text-sm sm:text-base" /></div>
+                                  <div className="relative w-20 sm:w-32"><input type="number" placeholder="reps" value={cVal.reps} onChange={(e) => handleWorkoutInput(ex.name, setIdx, 'reps', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 sm:p-2.5 font-black text-white text-center focus:outline-none focus:border-cyan-500 transition-colors text-sm sm:text-base" /></div>
                                 </div>
                               </div>
                             );
@@ -905,21 +879,19 @@ export default function GirlfriendFitnessApp() {
                         </div>
                       </div>
                     ))}
-                    <button onClick={saveWorkoutSession} className="w-full mt-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 rounded-full font-extrabold text-sm sm:text-lg flex items-center justify-center gap-2 hover:scale-[1.02] transition-all shadow-lg shadow-cyan-500/20"><Save size={20} /> SAVE SESSION</button>
+                    <button onClick={saveWorkoutSession} className="w-full mt-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 rounded-full font-extrabold text-sm sm:text-lg flex items-center justify-center gap-2 hover:scale-[1.02] shadow-lg"><Save size={20} /> SAVE SESSION</button>
                   </div>
                 )}
               </div>
             </div>
           )}
 
+          {/* === WORKOUT HUB (Routines) === */}
           {mainTab === 'workout' && subTabs.workout === 'routines' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               {!isCreatingRoutine ? (
                 <>
-                  <button onClick={() => setIsCreatingRoutine(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-cyan-400 text-cyan-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group">
-                    <Plus size={32} className="group-hover:scale-110 transition-transform" /> Create New Routine
-                  </button>
-
+                  <button onClick={() => setIsCreatingRoutine(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-cyan-400 text-cyan-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create New Routine</button>
                   <div className="grid grid-cols-1 gap-4 mt-6">
                     {workoutTemplates.map(routine => (
                       <div key={routine.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col">
@@ -927,22 +899,15 @@ export default function GirlfriendFitnessApp() {
                           <div className="absolute top-0 right-0 p-4 opacity-5"><Dumbbell size={80} /></div>
                           <h3 className="font-bold text-white text-xl mb-1 relative z-10">{routine.title}</h3>
                           <p className="text-xs text-slate-400 mb-4 relative z-10">{routine.isRest ? "Rest Day" : `${routine.exercises.length} Exercises`}</p>
-                          
                           {!routine.isRest && (
                             <div className="space-y-2 relative z-10">
                               {routine.exercises.map((ex, idx) => (
-                                <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-sm flex justify-between items-center">
-                                  <span className="font-bold text-slate-300 truncate pr-2">{ex.name}</span>
-                                  <span className="text-slate-500 text-[10px] sm:text-xs font-bold shrink-0">{ex.sets} Sets • {ex.rest}s</span>
-                                </div>
+                                <div key={idx} className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-sm flex justify-between items-center"><span className="font-bold text-slate-300 truncate pr-2">{ex.name}</span><span className="text-slate-500 text-[10px] sm:text-xs font-bold shrink-0">{ex.sets} Sets • {ex.rest}s</span></div>
                               ))}
                             </div>
                           )}
                         </div>
-                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto relative z-10">
-                          <button onClick={() => editRoutine(routine)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button>
-                          <button onClick={() => deleteRoutine(routine.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button>
-                        </div>
+                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto relative z-10"><button onClick={() => editRoutine(routine)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button><button onClick={() => deleteRoutine(routine.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button></div>
                       </div>
                     ))}
                   </div>
@@ -951,18 +916,10 @@ export default function GirlfriendFitnessApp() {
                 <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
                   <button onClick={() => { setIsCreatingRoutine(false); setEditingRoutineId(null); setDraftRoutineName(''); setDraftRoutineExercises([]); setDraftRoutineIsRest(false); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
                   <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingRoutineId ? 'Edit Routine' : 'Routine Builder'}</h3>
-                  
                   <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <label className="text-xs font-bold text-slate-500 mb-1 block">ROUTINE NAME</label>
-                      <input type="text" placeholder="e.g. Glute Dominant Day" value={draftRoutineName} onChange={(e)=>setDraftRoutineName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-cyan-500 text-sm sm:text-base" />
-                    </div>
-                    <div className="flex items-center gap-3 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800 h-full">
-                      <input type="checkbox" id="isRestCheck" checked={draftRoutineIsRest} onChange={(e) => setDraftRoutineIsRest(e.target.checked)} className="w-5 h-5 accent-cyan-500" />
-                      <label htmlFor="isRestCheck" className="text-sm font-bold text-slate-300">Mark as Rest Day</label>
-                    </div>
+                    <div className="flex-1"><label className="text-xs font-bold text-slate-500 mb-1 block">ROUTINE NAME</label><input type="text" value={draftRoutineName} onChange={(e)=>setDraftRoutineName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-cyan-500 text-sm sm:text-base" /></div>
+                    <div className="flex items-center gap-3 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800 h-full"><input type="checkbox" id="isRestCheck" checked={draftRoutineIsRest} onChange={(e) => setDraftRoutineIsRest(e.target.checked)} className="w-5 h-5 accent-cyan-500" /><label htmlFor="isRestCheck" className="text-sm font-bold text-slate-300">Mark as Rest Day</label></div>
                   </div>
-
                   {!draftRoutineIsRest && (
                     <>
                       {draftRoutineExercises.length > 0 && (
@@ -972,35 +929,24 @@ export default function GirlfriendFitnessApp() {
                             <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 gap-4">
                               <span className="font-bold text-sm text-white flex-1">{ex.name}</span>
                               <div className="flex items-center gap-3 self-end sm:self-auto">
-                                <div className="relative">
-                                  <label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">SETS</label>
-                                  <input type="number" value={ex.sets} onChange={(e)=>updateRoutineExercise(idx, 'sets', e.target.value)} className="w-14 sm:w-16 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" />
-                                </div>
-                                <div className="relative">
-                                  <label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">REST (s)</label>
-                                  <input type="number" value={ex.rest} onChange={(e)=>updateRoutineExercise(idx, 'rest', e.target.value)} className="w-14 sm:w-16 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" />
-                                </div>
+                                <div className="relative"><label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">SETS</label><input type="number" value={ex.sets} onChange={(e)=>updateRoutineExercise(idx, 'sets', e.target.value)} className="w-14 sm:w-16 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" /></div>
+                                <div className="relative"><label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">REST (s)</label><input type="number" value={ex.rest} onChange={(e)=>updateRoutineExercise(idx, 'rest', e.target.value)} className="w-14 sm:w-16 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" /></div>
                                 <button onClick={() => setDraftRoutineExercises(draftRoutineExercises.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400 p-2"><Trash2 size={16}/></button>
                               </div>
                             </div>
                           ))}
                         </div>
                       )}
-
                       <div className="bg-slate-800/30 p-4 rounded-2xl border border-slate-700/50 mb-6 relative">
                         <div className="flex justify-between items-center">
                           <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase flex items-center gap-1 sm:gap-2"><Search size={14}/> Add from Library</h4>
-                          <button onClick={() => setAddingRoutineExercise(!addingRoutineExercise)} className="text-cyan-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-cyan-500/10 px-3 py-1.5 rounded-lg transition-colors"><Plus size={14}/> Browse</button>
+                          <button onClick={() => setAddingRoutineExercise(!addingRoutineExercise)} className="text-cyan-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-cyan-500/10 px-3 py-1.5 rounded-lg"><Plus size={14}/> Browse</button>
                         </div>
-
                         {addingRoutineExercise && (
                           <div className="mt-4 max-h-48 overflow-y-auto space-y-2 scrollbar-hide border-t border-slate-700/50 pt-4 animate-in fade-in zoom-in-95 duration-200">
                             {exercises.map(ex => (
                               <div key={ex.id} className="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <div className="min-w-0 pr-2">
-                                  <p className="text-xs sm:text-sm font-bold text-white truncate">{ex.name}</p>
-                                  <p className="text-[9px] sm:text-[10px] text-cyan-400 truncate">{ex.target}</p>
-                                </div>
+                                <div className="min-w-0 pr-2"><p className="text-xs sm:text-sm font-bold text-white truncate">{ex.name}</p><p className="text-[9px] sm:text-[10px] text-cyan-400 truncate">{ex.target}</p></div>
                                 <button onClick={() => addExerciseToRoutine(ex)} className="bg-cyan-500/20 text-cyan-400 p-1.5 rounded-md hover:bg-cyan-500 hover:text-white transition-colors shrink-0"><Plus size={16} /></button>
                               </div>
                             ))}
@@ -1009,91 +955,56 @@ export default function GirlfriendFitnessApp() {
                       </div>
                     </>
                   )}
-                  <button onClick={saveRoutine} className="w-full bg-cyan-500 text-slate-950 py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-cyan-400 transition-colors">SAVE ROUTINE</button>
+                  <button onClick={saveRoutine} className="w-full bg-cyan-500 text-slate-950 py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-cyan-400">SAVE ROUTINE</button>
                 </div>
               )}
             </div>
           )}
 
+          {/* === WORKOUT HUB (Library) === */}
           {mainTab === 'workout' && subTabs.workout === 'library' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
                 {exerciseTargets.map(cat => (
-                  <button key={cat} onClick={() => setActiveExerciseFilter(cat)} className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeExerciseFilter === cat ? 'bg-cyan-500 text-white shadow-lg' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>
-                    {cat}
-                  </button>
+                  <button key={cat} onClick={() => setActiveExerciseFilter(cat)} className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeExerciseFilter === cat ? 'bg-cyan-500 text-white shadow-lg' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>{cat}</button>
                 ))}
               </div>
-
               <div className="bg-slate-900 p-1 rounded-3xl border border-slate-800 shadow-xl overflow-hidden transition-all">
-                <button onClick={() => {
-                  if (showAddExercise) {
-                    setShowAddExercise(false); setEditingExerciseId(null);
-                    setNewExercise({ name: '', target: 'Legs & Glutes', equipment: 'Dumbbell' });
-                  } else { setShowAddExercise(true); }
-                }} className="w-full p-4 flex items-center justify-between text-cyan-400 font-bold hover:bg-slate-800/50 transition-colors rounded-2xl text-sm sm:text-base">
-                  <span className="flex items-center gap-2"><Plus size={20}/> {editingExerciseId ? 'Edit Exercise' : 'Add Custom Exercise'}</span>
-                  <ChevronRight className={`transition-transform duration-300 ${showAddExercise ? 'rotate-90' : ''}`} />
+                <button onClick={() => { if (showAddExercise) { setShowAddExercise(false); setEditingExerciseId(null); setNewExercise({ name: '', target: 'Legs & Glutes', equipment: 'Dumbbell' }); } else { setShowAddExercise(true); } }} className="w-full p-4 flex items-center justify-between text-cyan-400 font-bold hover:bg-slate-800/50 transition-colors rounded-2xl text-sm sm:text-base">
+                  <span className="flex items-center gap-2"><Plus size={20}/> {editingExerciseId ? 'Edit Exercise' : 'Add Custom Exercise'}</span><ChevronRight className={`transition-transform duration-300 ${showAddExercise ? 'rotate-90' : ''}`} />
                 </button>
-                
                 {showAddExercise && (
                   <div className="p-4 border-t border-slate-800 bg-slate-900/50">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                      <div>
-                        <label className="text-xs font-bold text-slate-500 mb-1 block">EXERCISE NAME</label>
-                        <input type="text" value={newExercise.name} onChange={(e)=>setNewExercise({...newExercise, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm" placeholder="e.g. Hip Thrusts" />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-slate-500 mb-1 block">TARGET MUSCLE</label>
-                        <select value={newExercise.target} onChange={(e)=>setNewExercise({...newExercise, target: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm">
-                          {exerciseTargets.filter(t=>t!=='All').map(t => <option key={t}>{t}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-slate-500 mb-1 block">EQUIPMENT</label>
-                        <input type="text" value={newExercise.equipment} onChange={(e)=>setNewExercise({...newExercise, equipment: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm" placeholder="e.g. Barbell" />
-                      </div>
+                      <div><label className="text-xs font-bold text-slate-500 mb-1 block">EXERCISE NAME</label><input type="text" value={newExercise.name} onChange={(e)=>setNewExercise({...newExercise, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm" placeholder="e.g. Hip Thrusts" /></div>
+                      <div><label className="text-xs font-bold text-slate-500 mb-1 block">TARGET MUSCLE</label><select value={newExercise.target} onChange={(e)=>setNewExercise({...newExercise, target: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm">{exerciseTargets.filter(t=>t!=='All').map(t => <option key={t}>{t}</option>)}</select></div>
+                      <div><label className="text-xs font-bold text-slate-500 mb-1 block">EQUIPMENT</label><input type="text" value={newExercise.equipment} onChange={(e)=>setNewExercise({...newExercise, equipment: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm" placeholder="e.g. Barbell" /></div>
                     </div>
                     <button onClick={saveExercise} className="w-full bg-cyan-500 text-slate-950 py-3 rounded-xl font-bold shadow-lg hover:bg-cyan-400 transition-colors text-sm sm:text-base">{editingExerciseId ? 'UPDATE EXERCISE' : 'SAVE EXERCISE'}</button>
                   </div>
                 )}
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4">
                 {filteredExercises.map((item) => (
                   <div key={item.id} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between group hover:border-cyan-500/50 transition-colors relative">
                     <div className="flex justify-between items-start mb-3">
-                      <div className="min-w-0 pr-2">
-                        <h4 className="font-bold text-white text-base sm:text-lg leading-tight truncate">{item.name}</h4>
-                        <p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Equipment: {item.equipment}</p>
-                      </div>
-                      <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <button onClick={() => editExercise(item)} className="p-1.5 text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={14}/></button>
-                        <button onClick={() => deleteExercise(item.id)} className="p-1.5 text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={14}/></button>
-                      </div>
+                      <div className="min-w-0 pr-2"><h4 className="font-bold text-white text-base sm:text-lg leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Equipment: {item.equipment}</p></div>
+                      <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editExercise(item)} className="p-1.5 text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={14}/></button><button onClick={() => deleteExercise(item.id)} className="p-1.5 text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={14}/></button></div>
                     </div>
-                    <div>
-                      <span className="text-[9px] sm:text-[10px] font-bold px-2 py-1 rounded-md bg-slate-800 text-cyan-400 border border-slate-700">{item.target}</span>
-                    </div>
+                    <div><span className="text-[9px] sm:text-[10px] font-bold px-2 py-1 rounded-md bg-slate-800 text-cyan-400 border border-slate-700">{item.target}</span></div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* ==================== DIET HUB ==================== */}
+          {/* === DIET HUB (Targets) === */}
           {mainTab === 'diet' && subTabs.diet === 'targets' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               <div className="flex justify-between items-end mb-4">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><Target className="text-rose-400" size={28} /> Macro Goals</h2>
-                  <p className="text-slate-400 text-xs sm:text-sm mt-1">Tune your engine and adjust your fuel.</p>
-                </div>
+                <div><h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><Target className="text-rose-400" size={28} /> Macro Goals</h2><p className="text-slate-400 text-xs sm:text-sm mt-1">Tune your engine and adjust your fuel.</p></div>
               </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                
-                {/* 1. BODY METRICS */}
                 <div className="bg-slate-900 p-5 sm:p-6 rounded-[2rem] border border-slate-800 shadow-xl">
                   <h3 className="text-lg font-bold text-white mb-4 border-b border-slate-800 pb-3 flex items-center gap-2"><Ruler size={18} className="text-rose-400"/> 1. Body Metrics</h3>
                   <div className="grid grid-cols-3 gap-3 mb-6">
@@ -1101,108 +1012,42 @@ export default function GirlfriendFitnessApp() {
                     <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">WEIGHT (KG)</label><input type="number" value={weight} onChange={e=>setWeight(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" /></div>
                     <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">HEIGHT (CM)</label><input type="number" value={height} onChange={e=>setHeight(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" /></div>
                   </div>
-                  
-                  <p className="text-xs text-slate-400 mb-3 italic">Optional: Tape measurements unlock the highly accurate Katch-McArdle formula.</p>
                   <div className="grid grid-cols-3 gap-3">
                     <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">NECK (IN)</label><input type="number" value={neck} onChange={e=>setNeck(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" placeholder="Optional" /></div>
                     <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">WAIST (IN)</label><input type="number" value={waist} onChange={e=>setWaist(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" placeholder="Optional" /></div>
                     <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">HIPS (IN)</label><input type="number" value={hip} onChange={e=>setHip(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-center font-bold focus:outline-none focus:border-rose-500" placeholder="Optional" /></div>
                   </div>
                 </div>
-
-                {/* 2. LIFESTYLE & MACROS */}
                 <div className="bg-slate-900 p-5 sm:p-6 rounded-[2rem] border border-slate-800 shadow-xl">
                   <h3 className="text-lg font-bold text-white mb-4 border-b border-slate-800 pb-3 flex items-center gap-2"><Activity size={18} className="text-orange-400"/> 2. Lifestyle & Goals</h3>
-                  
                   <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block">ACTIVITY LEVEL</label>
-                      <select value={activityLevel} onChange={e=>setActivityLevel(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs font-bold focus:outline-none focus:border-orange-500 appearance-none">
-                        <option value={1.2}>Sedentary (1.2)</option>
-                        <option value={1.375}>Lightly Active (1.375)</option>
-                        <option value={1.55}>Moderately Active (1.55)</option>
-                        <option value={1.725}>Very Active (1.725)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 mb-1 block">GOAL</label>
-                      <select value={caloricSurplus} onChange={e=>setCaloricSurplus(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs font-bold focus:outline-none focus:border-orange-500 appearance-none">
-                        <option value={0}>Maintenance (+0 kcal)</option>
-                        <option value={250}>Lean Bulk (+250 kcal)</option>
-                        <option value={500}>Aggressive Bulk (+500 kcal)</option>
-                        <option value={-250}>Light Cut (-250 kcal)</option>
-                      </select>
-                    </div>
+                    <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">ACTIVITY</label><select value={activityLevel} onChange={e=>setActivityLevel(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs font-bold focus:outline-none focus:border-orange-500 appearance-none"><option value={1.2}>Sedentary (1.2)</option><option value={1.375}>Lightly Active (1.375)</option><option value={1.55}>Moderate (1.55)</option></select></div>
+                    <div><label className="text-[10px] font-bold text-slate-500 mb-1 block">GOAL</label><select value={caloricSurplus} onChange={e=>setCaloricSurplus(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-xs font-bold focus:outline-none focus:border-orange-500 appearance-none"><option value={0}>Maintenance (+0)</option><option value={250}>Lean Bulk (+250)</option><option value={500}>Bulk (+500)</option><option value={-250}>Cut (-250)</option></select></div>
                   </div>
-
                   <div className="space-y-5">
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold text-rose-400">PROTEIN INTAKE</label>
-                        <span className="text-xs font-bold text-white">{proteinPerKg}g / kg</span>
-                      </div>
-                      <input type="range" min="1.6" max="2.2" step="0.1" value={proteinPerKg} onChange={e=>setProteinPerKg(e.target.value)} className="w-full accent-rose-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
-                      <div className="flex justify-between text-[8px] text-slate-500 mt-1"><span>1.6g (Optimal)</span><span>2.2g (Max)</span></div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold text-yellow-400">FAT INTAKE</label>
-                        <span className="text-xs font-bold text-white">{fatPerKg}g / kg</span>
-                      </div>
-                      <input type="range" min="0.8" max="1.2" step="0.1" value={fatPerKg} onChange={e=>setFatPerKg(e.target.value)} className="w-full accent-yellow-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
-                      <div className="flex justify-between text-[8px] text-slate-500 mt-1"><span>0.8g (Min)</span><span>1.2g (Hormone Health)</span></div>
-                    </div>
-                    <p className="text-xs text-cyan-400 italic text-center mt-2">Carbs are automatically calculated to fill the rest of your daily calories.</p>
+                    <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] font-bold text-rose-400">PROTEIN</label><span className="text-xs font-bold text-white">{proteinPerKg}g / kg</span></div><input type="range" min="1.6" max="2.2" step="0.1" value={proteinPerKg} onChange={e=>setProteinPerKg(e.target.value)} className="w-full accent-rose-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" /></div>
+                    <div><div className="flex justify-between items-center mb-1"><label className="text-[10px] font-bold text-yellow-400">FAT</label><span className="text-xs font-bold text-white">{fatPerKg}g / kg</span></div><input type="range" min="0.8" max="1.2" step="0.1" value={fatPerKg} onChange={e=>setFatPerKg(e.target.value)} className="w-full accent-yellow-500 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" /></div>
                   </div>
                 </div>
               </div>
-
-              {/* LIVE RESULTS BANNER */}
               <div className="bg-gradient-to-r from-rose-500 to-orange-500 p-1 rounded-[2rem] shadow-2xl mt-6">
                 <div className="bg-slate-950 p-5 sm:p-8 rounded-[calc(2rem-4px)] flex flex-col items-center">
-                  <p className="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest text-center">Calculated via {calcResults.method}</p>
-                  
                   <div className="flex flex-wrap justify-center gap-4 sm:gap-8 mb-8 w-full">
-                    <div className="text-center">
-                      <p className="text-[10px] text-slate-500 font-bold mb-1">TDEE</p>
-                      <p className="text-2xl sm:text-3xl font-black text-slate-300">{calcResults.tdee}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[10px] text-slate-500 font-bold mb-1">TARGET CALORIES</p>
-                      <p className="text-3xl sm:text-4xl font-black text-amber-400">{calcResults.calories}</p>
-                    </div>
-                    {calcResults.bodyFat && (
-                      <div className="text-center hidden sm:block">
-                        <p className="text-[10px] text-slate-500 font-bold mb-1">EST. BODY FAT</p>
-                        <p className="text-2xl sm:text-3xl font-black text-emerald-400">{calcResults.bodyFat}%</p>
-                      </div>
-                    )}
+                    <div className="text-center"><p className="text-[10px] text-slate-500 font-bold mb-1">TDEE</p><p className="text-2xl sm:text-3xl font-black text-slate-300">{calcResults.tdee}</p></div>
+                    <div className="text-center"><p className="text-[10px] text-slate-500 font-bold mb-1">TARGET CALORIES</p><p className="text-3xl sm:text-4xl font-black text-amber-400">{calcResults.calories}</p></div>
                   </div>
-
                   <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full max-w-lg mb-8">
-                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 text-center">
-                       <p className="text-[10px] text-slate-500 font-bold mb-1">PROTEIN</p>
-                       <p className="text-xl sm:text-2xl font-black text-rose-400">{calcResults.protein}g</p>
-                     </div>
-                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 text-center">
-                       <p className="text-[10px] text-slate-500 font-bold mb-1">CARBS</p>
-                       <p className="text-xl sm:text-2xl font-black text-cyan-400">{calcResults.carbs}g</p>
-                     </div>
-                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 text-center">
-                       <p className="text-[10px] text-slate-500 font-bold mb-1">FAT</p>
-                       <p className="text-xl sm:text-2xl font-black text-yellow-400">{calcResults.fat}g</p>
-                     </div>
+                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 text-center"><p className="text-[10px] text-slate-500 font-bold mb-1">PROTEIN</p><p className="text-xl sm:text-2xl font-black text-rose-400">{calcResults.protein}g</p></div>
+                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 text-center"><p className="text-[10px] text-slate-500 font-bold mb-1">CARBS</p><p className="text-xl sm:text-2xl font-black text-cyan-400">{calcResults.carbs}g</p></div>
+                     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 text-center"><p className="text-[10px] text-slate-500 font-bold mb-1">FAT</p><p className="text-xl sm:text-2xl font-black text-yellow-400">{calcResults.fat}g</p></div>
                   </div>
-
-                  <button onClick={saveProfile} className="w-full max-w-md bg-gradient-to-r from-rose-500 to-orange-500 text-white py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">
-                    <Save size={20} /> SAVE PROFILE & MACROS
-                  </button>
+                  <button onClick={saveProfile} className="w-full max-w-md bg-gradient-to-r from-rose-500 to-orange-500 text-white py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"><Save size={20} /> SAVE PROFILE & MACROS</button>
                 </div>
               </div>
             </div>
           )}
 
+          {/* === DIET HUB (Log) === */}
           {mainTab === 'diet' && subTabs.diet === 'log' && (
              <div className="space-y-6 animate-in fade-in duration-500">
               {calcResults && (
@@ -1212,80 +1057,37 @@ export default function GirlfriendFitnessApp() {
                     const diff = Math.abs(calcResults.calories - consumed.calories);
                     const mainColor = isOver ? 'text-indigo-400' : 'text-amber-400';
                     const mainBg = isOver ? 'bg-indigo-500' : 'bg-amber-500';
-                    const message = isOver 
-                      ? `Goal Reached! +${diff} kcal buffer.` 
-                      : `${diff} kcal remaining for today.`;
-
                     return (
                       <div className="mb-8">
                         <div className={`p-3 sm:p-4 rounded-2xl mb-4 text-center font-bold text-xs sm:text-sm ${isOver ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-slate-800 text-slate-400'}`}>
-                          {isOver && <CheckCircle2 size={16} className="inline mr-1 text-indigo-400" />} {message}
+                          {isOver ? `Goal Reached! +${diff} kcal buffer.` : `${diff} kcal remaining for today.`}
                         </div>
-
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-center">
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden">
-                            <div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${mainBg}`} style={{ width: `${Math.min(100, (consumed.calories / calcResults.calories) * 100)}%` }}></div>
-                            <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">KCAL</p>
-                            <p className={`text-xl sm:text-2xl font-black ${mainColor}`}>{consumed.calories}</p>
-                            <p className="text-[8px] sm:text-[10px] text-slate-500 mt-1">Goal: {calcResults.calories}</p>
-                          </div>
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden">
-                            <div className="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.protein / calcResults.protein) * 100)}%` }}></div>
-                            <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">PRO</p>
-                            <p className="text-xl sm:text-2xl font-black text-rose-400">{Math.round(consumed.protein)}g</p>
-                            <p className="text-[8px] sm:text-[10px] text-slate-500 mt-1">Goal: {calcResults.protein}g</p>
-                          </div>
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden">
-                            <div className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.carbs / calcResults.carbs) * 100)}%` }}></div>
-                            <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">CARB</p>
-                            <p className="text-xl sm:text-2xl font-black text-cyan-400">{Math.round(consumed.carbs)}g</p>
-                            <p className="text-[8px] sm:text-[10px] text-slate-500 mt-1">Goal: {calcResults.carbs}g</p>
-                          </div>
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden">
-                            <div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.fat / calcResults.fat) * 100)}%` }}></div>
-                            <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">FAT</p>
-                            <p className="text-xl sm:text-2xl font-black text-yellow-400">{Math.round(consumed.fat)}g</p>
-                            <p className="text-[8px] sm:text-[10px] text-slate-500 mt-1">Goal: {calcResults.fat}g</p>
-                          </div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${mainBg}`} style={{ width: `${Math.min(100, (consumed.calories / calcResults.calories) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">KCAL</p><p className={`text-xl sm:text-2xl font-black ${mainColor}`}>{consumed.calories}</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.protein / calcResults.protein) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">PRO</p><p className="text-xl sm:text-2xl font-black text-rose-400">{Math.round(consumed.protein)}g</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.carbs / calcResults.carbs) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">CARB</p><p className="text-xl sm:text-2xl font-black text-cyan-400">{Math.round(consumed.carbs)}g</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.fat / calcResults.fat) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">FAT</p><p className="text-xl sm:text-2xl font-black text-yellow-400">{Math.round(consumed.fat)}g</p></div>
                         </div>
                       </div>
                     );
                   })()}
-
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider flex items-center justify-between">
-                    <span>Scheduled Plan</span>
-                    {todaysPlan && <span className="text-purple-400 bg-purple-500/10 px-2 py-1 rounded text-[10px] truncate max-w-[120px] sm:max-w-none">{todaysPlan.name}</span>}
-                  </h3>
-                  
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider flex items-center justify-between"><span>Scheduled Plan</span>{todaysPlan && <span className="text-purple-400 bg-purple-500/10 px-2 py-1 rounded text-[10px] truncate max-w-[120px] sm:max-w-none">{todaysPlan.name}</span>}</h3>
                   {!todaysPlan ? (
-                    <div className="text-center p-6 border-2 border-dashed border-slate-800 rounded-3xl mb-6">
-                      <p className="text-sm text-slate-500 font-bold">No meal plan assigned for today.</p>
-                      <button onClick={() => switchMainTab('schedule')} className="text-blue-400 text-xs font-bold mt-2 hover:underline">Go to Schedule</button>
-                    </div>
+                    <div className="text-center p-6 border-2 border-dashed border-slate-800 rounded-3xl mb-6"><p className="text-sm text-slate-500 font-bold">No meal plan assigned for today.</p></div>
                   ) : (
                     <div className="space-y-3 sm:space-y-4 mb-8">
                       {todaysPlan.meals.map(meal => (
                         <div key={meal.id} className="bg-slate-950 border border-slate-800 p-3 sm:p-4 rounded-2xl">
                           <h4 className="font-bold text-white text-sm sm:text-base mb-2">{meal.name}</h4>
                           {meal.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-xs sm:text-sm mb-1 last:mb-0 gap-2">
-                              <span className="text-slate-300 truncate">{item.qty}{item.unit} {item.name}</span>
-                              <span className="text-slate-500 text-[10px] sm:text-xs font-bold shrink-0">{item.calories} kcal</span>
-                            </div>
+                            <div key={idx} className="flex justify-between items-center text-xs sm:text-sm mb-1 last:mb-0 gap-2"><span className="text-slate-300 truncate">{item.qty}{item.unit} {item.name}</span><span className="text-slate-500 text-[10px] sm:text-xs font-bold shrink-0">{item.calories} kcal</span></div>
                           ))}
                         </div>
                       ))}
                     </div>
                   )}
-
                   <div className="border-t border-slate-800 pt-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">Extra Additions</h3>
-                      <button onClick={() => setActiveExtraAdd(!activeExtraAdd)} className="text-emerald-400 hover:text-emerald-300 text-[10px] sm:text-xs font-bold bg-emerald-500/10 px-2 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
-                        <Plus size={14} /> Add Extra
-                      </button>
-                    </div>
-
+                    <div className="flex justify-between items-center mb-4"><h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-wider">Extra Additions</h3><button onClick={() => setActiveExtraAdd(!activeExtraAdd)} className="text-emerald-400 hover:text-emerald-300 text-[10px] sm:text-xs font-bold bg-emerald-500/10 px-2 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"><Plus size={14} /> Add Extra</button></div>
                     {activeExtraAdd && (
                       <div className="mb-4 bg-slate-950 p-3 sm:p-4 rounded-xl border border-emerald-500/50 animate-in fade-in zoom-in-95 duration-200">
                         <h4 className="text-[10px] sm:text-xs font-bold text-slate-500 mb-3">Add outside of plan:</h4>
@@ -1296,27 +1098,20 @@ export default function GirlfriendFitnessApp() {
                               <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                                 <input type="number" placeholder={ing.baseQuantity} id={`extra-${ing.id}`} className="w-12 sm:w-14 bg-slate-800 text-white font-bold p-1 rounded-md text-center text-[10px] sm:text-xs focus:outline-none" />
                                 <span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span>
-                                <button onClick={() => {
-                                  const val = document.getElementById(`extra-${ing.id}`).value || ing.baseQuantity;
-                                  addExtraToToday(ing, val);
-                                }} className="bg-emerald-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-emerald-600 transition-colors"><Plus size={12} /></button>
+                                <button onClick={() => { const val = document.getElementById(`extra-${ing.id}`).value || ing.baseQuantity; addExtraToToday(ing, val); }} className="bg-emerald-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-emerald-600 transition-colors"><Plus size={12} /></button>
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-
                     {dailyExtras.length === 0 ? (
-                      <p className="text-[10px] sm:text-xs text-slate-500 italic text-center p-4">You haven't deviated from the plan today. Great job!</p>
+                      <p className="text-[10px] sm:text-xs text-slate-500 italic text-center p-4">You haven't deviated from the plan today.</p>
                     ) : (
                       <div className="space-y-2">
                         {dailyExtras.map(ext => (
                           <div key={ext.id} className="bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-700/50 flex justify-between items-center gap-2">
-                            <div className="min-w-0">
-                              <p className="text-xs sm:text-sm font-bold text-white truncate">{ext.name}</p>
-                              <p className="text-[8px] sm:text-[10px] text-amber-400 font-bold">+{ext.calories} kcal</p>
-                            </div>
+                            <div className="min-w-0"><p className="text-xs sm:text-sm font-bold text-white truncate">{ext.name}</p><p className="text-[8px] sm:text-[10px] text-amber-400 font-bold">+{ext.calories} kcal</p></div>
                             <button onClick={() => removeExtra(ext.id)} className="text-slate-500 hover:text-red-400 p-1 shrink-0"><Trash2 size={14}/></button>
                           </div>
                         ))}
@@ -1328,39 +1123,25 @@ export default function GirlfriendFitnessApp() {
              </div>
           )}
 
+          {/* === DIET HUB (Plans) === */}
           {mainTab === 'diet' && subTabs.diet === 'plans' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               {!isCreatingTemplate ? (
                 <>
-                  <button onClick={() => setIsCreatingTemplate(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-purple-400 text-purple-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group">
-                    <Plus size={32} className="group-hover:scale-110 transition-transform" /> Create Sample Meal Day
-                  </button>
-
+                  <button onClick={() => setIsCreatingTemplate(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-purple-400 text-purple-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create Sample Meal Day</button>
                   <div className="grid grid-cols-1 gap-4 mt-6">
                     {mealTemplates.map(template => (
                       <div key={template.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col">
                         <div className="p-5 sm:p-6 pb-4">
                           <h3 className="font-bold text-white text-lg sm:text-xl mb-1">{template.name}</h3>
-                          <p className="text-[10px] sm:text-xs text-slate-400 mb-4">{template.mealCount} Meals Total</p>
-                          <div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold mb-4 flex-wrap">
-                            <div className="text-amber-400">{template.totalCalories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div>
-                            <div className="text-rose-400">{template.totalProtein}g <span className="text-[8px] sm:text-[10px] text-slate-500">PRO</span></div>
-                            <div className="text-cyan-400">{template.totalCarbs}g <span className="text-[8px] sm:text-[10px] text-slate-500">CARB</span></div>
-                            <div className="text-yellow-400">{template.totalFat}g <span className="text-[8px] sm:text-[10px] text-slate-500">FAT</span></div>
-                          </div>
+                          <div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold mb-4 flex-wrap"><div className="text-amber-400">{template.totalCalories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div><div className="text-rose-400">{template.totalProtein}g <span className="text-[8px] sm:text-[10px] text-slate-500">PRO</span></div><div className="text-cyan-400">{template.totalCarbs}g <span className="text-[8px] sm:text-[10px] text-slate-500">CARB</span></div></div>
                           <div className="space-y-2">
                             {template.meals.map(meal => (
-                              <div key={meal.id} className="bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 text-xs sm:text-sm flex gap-2">
-                                <span className="font-bold text-slate-300 shrink-0">{meal.name}:</span> 
-                                <span className="text-slate-500 truncate">{meal.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ') || 'Empty'}</span>
-                              </div>
+                              <div key={meal.id} className="bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 text-xs sm:text-sm flex gap-2"><span className="font-bold text-slate-300 shrink-0">{meal.name}:</span><span className="text-slate-500 truncate">{meal.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ') || 'Empty'}</span></div>
                             ))}
                           </div>
                         </div>
-                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto">
-                          <button onClick={() => editTemplate(template)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button>
-                          <button onClick={() => deleteTemplate(template.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button>
-                        </div>
+                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto"><button onClick={() => editTemplate(template)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button><button onClick={() => deleteTemplate(template.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button></div>
                       </div>
                     ))}
                   </div>
@@ -1369,77 +1150,26 @@ export default function GirlfriendFitnessApp() {
                 <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
                   <button onClick={() => { setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
                   <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingTemplateId ? 'Edit Template' : 'Template Builder'}</h3>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 mb-1 block">TEMPLATE NAME</label>
-                      <input type="text" placeholder="e.g. Cardio Day Meals" value={draftTemplateName} onChange={(e)=>setDraftTemplateName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-purple-500 text-sm sm:text-base" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-500 mb-1 block">NUMBER OF MEALS</label>
-                      <select value={draftMealCount} onChange={(e)=>handleMealCountChange(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-purple-500 text-sm sm:text-base">
-                        {[1,2,3,4,5,6].map(num => <option key={num} value={num}>{num} Meals</option>)}
-                      </select>
-                    </div>
+                    <div><label className="text-xs font-bold text-slate-500 mb-1 block">TEMPLATE NAME</label><input type="text" placeholder="e.g. Cardio Day Meals" value={draftTemplateName} onChange={(e)=>setDraftTemplateName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-purple-500 text-sm sm:text-base" /></div>
+                    <div><label className="text-xs font-bold text-slate-500 mb-1 block">NUMBER OF MEALS</label><select value={draftMealCount} onChange={(e)=>handleMealCountChange(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-purple-500 text-sm sm:text-base">{[1,2,3,4,5,6].map(num => <option key={num} value={num}>{num} Meals</option>)}</select></div>
                   </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-8 bg-slate-950 p-3 sm:p-4 rounded-2xl border border-slate-800 shadow-inner">
-                    <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold mb-1">TOTAL KCAL</p><p className="text-lg sm:text-xl font-black text-amber-400">{Math.round(templateTotals.calories)}</p></div>
-                    <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold mb-1">TOTAL PRO</p><p className="text-lg sm:text-xl font-black text-rose-400">{Math.round(templateTotals.protein)}g</p></div>
-                    <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold mb-1">TOTAL CARB</p><p className="text-lg sm:text-xl font-black text-cyan-400">{Math.round(templateTotals.carbs)}g</p></div>
-                    <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold mb-1">TOTAL FAT</p><p className="text-lg sm:text-xl font-black text-yellow-400">{Math.round(templateTotals.fat)}g</p></div>
-                  </div>
-
                   <div className="space-y-4 mb-6">
                     {draftMeals.map((meal) => (
                       <div key={meal.id} className="bg-slate-800/30 p-3 sm:p-4 rounded-2xl border border-slate-700/50">
-                        <div className="flex justify-between items-center mb-3 gap-2">
-                          <input type="text" value={meal.name} onChange={(e) => {
-                            const newMeals = [...draftMeals];
-                            newMeals.find(m => m.id === meal.id).name = e.target.value;
-                            setDraftMeals(newMeals);
-                          }} className="bg-transparent text-white font-bold focus:outline-none border-b border-dashed border-slate-600 focus:border-purple-400 px-1 w-full min-w-0 text-sm sm:text-base" />
-                          <button onClick={() => setActiveAddingMealId(meal.id)} className="text-purple-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-purple-500/10 px-2 sm:px-3 py-1.5 rounded-lg transition-colors shrink-0"><Plus size={14}/> Add Food</button>
-                        </div>
-                        
+                        <div className="flex justify-between items-center mb-3 gap-2"><input type="text" value={meal.name} onChange={(e) => { const newMeals = [...draftMeals]; newMeals.find(m => m.id === meal.id).name = e.target.value; setDraftMeals(newMeals); }} className="bg-transparent text-white font-bold focus:outline-none border-b border-dashed border-slate-600 focus:border-purple-400 px-1 w-full min-w-0 text-sm sm:text-base" /><button onClick={() => setActiveAddingMealId(meal.id)} className="text-purple-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-purple-500/10 px-2 sm:px-3 py-1.5 rounded-lg transition-colors shrink-0"><Plus size={14}/> Add Food</button></div>
                         <div className="space-y-2">
                           {meal.items.map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-xl border border-slate-800 text-xs sm:text-sm gap-2">
-                              <span className="font-bold text-slate-300 truncate">{item.qty}{item.unit} {item.name}</span>
-                              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                                <span className="text-[8px] sm:text-[10px] text-slate-500">{item.calories} kcal</span>
-                                <button onClick={() => removeDraftItem(meal.id, idx)} className="text-slate-600 hover:text-red-400"><Trash2 size={14}/></button>
-                              </div>
-                            </div>
+                            <div key={idx} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-xl border border-slate-800 text-xs sm:text-sm gap-2"><span className="font-bold text-slate-300 truncate">{item.qty}{item.unit} {item.name}</span><div className="flex items-center gap-2 sm:gap-3 shrink-0"><span className="text-[8px] sm:text-[10px] text-slate-500">{item.calories} kcal</span><button onClick={() => removeDraftItem(meal.id, idx)} className="text-slate-600 hover:text-red-400"><Trash2 size={14}/></button></div></div>
                           ))}
-                          {meal.items.length === 0 && <p className="text-[10px] sm:text-xs text-slate-500 italic">No food added yet.</p>}
                         </div>
-
                         {activeAddingMealId === meal.id && (
                           <div className="mt-4 bg-slate-950 p-3 sm:p-4 rounded-xl border border-purple-500/50 animate-in fade-in zoom-in-95 duration-200 relative">
                             <button onClick={() => setActiveAddingMealId(null)} className="absolute top-2 right-2 text-slate-500 hover:text-white"><X size={16}/></button>
                             <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase mb-3">Select from Database</h4>
                             <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
                               {[...recipes, ...ingredients].map(ing => (
-                                <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2">
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1 sm:gap-2 truncate">
-                                      {ing.items ? <ChefHat size={10} className="text-yellow-400 shrink-0"/> : <Apple size={10} className="text-orange-400 shrink-0"/>} 
-                                      <span className="truncate">{ing.name}</span>
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                                    <input type="number" placeholder={ing.baseQuantity} id={`qty-${meal.id}-${ing.id}`} className="w-10 sm:w-14 bg-slate-800 text-white font-bold p-1 sm:p-1.5 rounded-md text-center text-[10px] sm:text-xs focus:outline-none focus:ring-1 ring-purple-500" />
-                                    <span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span>
-                                    <button onClick={() => {
-                                      const val = document.getElementById(`qty-${meal.id}-${ing.id}`).value || ing.baseQuantity;
-                                      addItemToDraftMeal(ing, val);
-                                      document.getElementById(`qty-${meal.id}-${ing.id}`).value = '';
-                                    }} className="bg-purple-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-purple-600 transition-colors">
-                                      <Plus size={12} />
-                                    </button>
-                                  </div>
-                                </div>
+                                <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" placeholder={ing.baseQuantity} id={`qty-${meal.id}-${ing.id}`} className="w-10 sm:w-14 bg-slate-800 text-white font-bold p-1 sm:p-1.5 rounded-md text-center text-[10px] sm:text-xs focus:outline-none focus:ring-1 ring-purple-500" /><span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span><button onClick={() => { const val = document.getElementById(`qty-${meal.id}-${ing.id}`).value || ing.baseQuantity; addItemToDraftMeal(ing, val); document.getElementById(`qty-${meal.id}-${ing.id}`).value = ''; }} className="bg-purple-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-purple-600 transition-colors"><Plus size={12} /></button></div></div>
                               ))}
                             </div>
                           </div>
@@ -1453,32 +1183,17 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
+          {/* === DIET HUB (Recipes) === */}
           {mainTab === 'diet' && subTabs.diet === 'recipes' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               {!isCreatingRecipe ? (
                 <>
-                  <button onClick={() => setIsCreatingRecipe(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-yellow-400 text-yellow-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group">
-                    <Plus size={32} className="group-hover:scale-110 transition-transform" /> Create New Recipe
-                  </button>
-
+                  <button onClick={() => setIsCreatingRecipe(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-yellow-400 text-yellow-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create New Recipe</button>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                     {recipes.map(recipe => (
                       <div key={recipe.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col">
-                        <div className="p-5 sm:p-6 pb-4 relative">
-                          <div className="absolute top-0 right-0 p-4 opacity-5"><Utensils size={80} /></div>
-                          <h3 className="font-bold text-white text-lg sm:text-xl mb-1 relative z-10">{recipe.name}</h3>
-                          <p className="text-[10px] sm:text-xs text-slate-400 mb-4 relative z-10 truncate">{recipe.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ')}</p>
-                          
-                          <div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold relative z-10 flex-wrap">
-                            <div className="text-amber-400">{recipe.calories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div>
-                            <div className="text-rose-400">{recipe.protein}g <span className="text-[8px] sm:text-[10px] text-slate-500">PRO</span></div>
-                            <div className="text-cyan-400">{recipe.carbs}g <span className="text-[8px] sm:text-[10px] text-slate-500">CARB</span></div>
-                          </div>
-                        </div>
-                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto relative z-10">
-                          <button onClick={() => editRecipe(recipe)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button>
-                          <button onClick={() => deleteRecipe(recipe.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button>
-                        </div>
+                        <div className="p-5 sm:p-6 pb-4 relative"><div className="absolute top-0 right-0 p-4 opacity-5"><Utensils size={80} /></div><h3 className="font-bold text-white text-lg sm:text-xl mb-1 relative z-10">{recipe.name}</h3><p className="text-[10px] sm:text-xs text-slate-400 mb-4 relative z-10 truncate">{recipe.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ')}</p><div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold relative z-10 flex-wrap"><div className="text-amber-400">{recipe.calories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div></div></div>
+                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto relative z-10"><button onClick={() => editRecipe(recipe)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button><button onClick={() => deleteRecipe(recipe.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button></div>
                       </div>
                     ))}
                   </div>
@@ -1487,50 +1202,19 @@ export default function GirlfriendFitnessApp() {
                 <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
                   <button onClick={() => { setIsCreatingRecipe(false); setEditingRecipeId(null); setDraftRecipeName(''); setDraftRecipeItems([]); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
                   <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingRecipeId ? 'Edit Recipe' : 'Recipe Builder'}</h3>
-                  
-                  <input type="text" placeholder="Recipe Name (e.g. Morning Oats)" value={draftRecipeName} onChange={(e)=>setDraftRecipeName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm sm:text-base font-bold text-white focus:outline-none focus:border-yellow-500 mb-6" />
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-8 bg-slate-950 p-3 sm:p-4 rounded-2xl border border-slate-800">
-                    <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold mb-1">TOTAL KCAL</p><p className="text-lg sm:text-xl font-black text-amber-400">{Math.round(recipeDraftTotals.calories)}</p></div>
-                    <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold mb-1">TOTAL PRO</p><p className="text-lg sm:text-xl font-black text-rose-400">{Math.round(recipeDraftTotals.protein)}g</p></div>
-                    <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold mb-1">TOTAL CARB</p><p className="text-lg sm:text-xl font-black text-cyan-400">{Math.round(recipeDraftTotals.carbs)}g</p></div>
-                    <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold mb-1">TOTAL FAT</p><p className="text-lg sm:text-xl font-black text-yellow-400">{Math.round(recipeDraftTotals.fat)}g</p></div>
-                  </div>
-
+                  <input type="text" placeholder="Recipe Name" value={draftRecipeName} onChange={(e)=>setDraftRecipeName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm sm:text-base font-bold text-white focus:outline-none focus:border-yellow-500 mb-6" />
                   {draftRecipeItems.length > 0 && (
                     <div className="mb-6 space-y-2">
-                      <h4 className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase">Ingredients Added</h4>
                       {draftRecipeItems.map((d, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-700/50 gap-2">
-                          <span className="font-bold text-xs sm:text-sm text-white truncate">{d.qty}{d.unit} {d.name}</span>
-                          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                            <span className="text-[8px] sm:text-[10px] text-slate-500">{d.calories} kcal</span>
-                            <button onClick={() => setDraftRecipeItems(draftRecipeItems.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400"><Trash2 size={14}/></button>
-                          </div>
-                        </div>
+                        <div key={idx} className="flex justify-between items-center bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-700/50 gap-2"><span className="font-bold text-xs sm:text-sm text-white truncate">{d.qty}{d.unit} {d.name}</span><div className="flex items-center gap-2 sm:gap-3 shrink-0"><span className="text-[8px] sm:text-[10px] text-slate-500">{d.calories} kcal</span><button onClick={() => setDraftRecipeItems(draftRecipeItems.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400"><Trash2 size={14}/></button></div></div>
                       ))}
                     </div>
                   )}
-
                   <div className="bg-slate-800/30 p-3 sm:p-4 rounded-2xl border border-slate-700/50 mb-6">
                     <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><Search size={12} sm:size={14}/> Search Database</h4>
                     <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
                       {ingredients.map(ing => (
-                        <div key={ing.id} className="flex justify-between items-center bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 gap-2">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p>
-                            <p className="text-[8px] sm:text-[10px] text-slate-500 truncate">Base: {ing.baseQuantity}{ing.unit} ({ing.calories} kcal)</p>
-                          </div>
-                          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                            <input type="number" placeholder={ing.baseQuantity} id={`rec-qty-${ing.id}`} className="w-10 sm:w-16 bg-slate-800 text-white font-bold p-1 sm:p-2 rounded-lg text-center text-[10px] sm:text-sm focus:outline-none focus:ring-1 ring-yellow-500" />
-                            <span className="text-[8px] sm:text-xs text-slate-400 w-6 sm:w-8">{ing.unit}</span>
-                            <button onClick={() => {
-                              const val = document.getElementById(`rec-qty-${ing.id}`).value || ing.baseQuantity;
-                              addIngredientToRecipe(ing, val);
-                              document.getElementById(`rec-qty-${ing.id}`).value = '';
-                            }} className="bg-slate-800 p-1 sm:p-2 rounded-lg text-slate-400 hover:bg-yellow-500 hover:text-white transition-colors"><Plus size={14} /></button>
-                          </div>
-                        </div>
+                        <div key={ing.id} className="flex justify-between items-center bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" placeholder={ing.baseQuantity} id={`rec-qty-${ing.id}`} className="w-10 sm:w-16 bg-slate-800 text-white font-bold p-1 sm:p-2 rounded-lg text-center text-[10px] sm:text-sm focus:outline-none focus:ring-1 ring-yellow-500" /><button onClick={() => { const val = document.getElementById(`rec-qty-${ing.id}`).value || ing.baseQuantity; addIngredientToRecipe(ing, val); document.getElementById(`rec-qty-${ing.id}`).value = ''; }} className="bg-slate-800 p-1 sm:p-2 rounded-lg text-slate-400 hover:bg-yellow-500 hover:text-white transition-colors"><Plus size={14} /></button></div></div>
                       ))}
                     </div>
                   </div>
@@ -1540,34 +1224,19 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
+          {/* === DIET HUB (Foods) === */}
           {mainTab === 'diet' && subTabs.diet === 'foods' && (
             <div className="animate-in fade-in duration-500 space-y-6">
-              <div className="flex justify-between items-end mb-4">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><Apple className="text-orange-400" size={28} /> Database</h2>
-                  <p className="text-slate-400 text-xs sm:text-sm mt-1">Raw ingredients and macros.</p>
-                </div>
-              </div>
-
+              <div className="flex justify-between items-end mb-4"><div><h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><Apple className="text-orange-400" size={28} /> Database</h2></div></div>
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
                 {ingredientCategories.map(cat => (
-                  <button key={cat} onClick={() => setActiveIngredientFilter(cat)} className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeIngredientFilter === cat ? 'bg-orange-500 text-white shadow-lg' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>
-                    {cat}
-                  </button>
+                  <button key={cat} onClick={() => setActiveIngredientFilter(cat)} className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeIngredientFilter === cat ? 'bg-orange-500 text-white shadow-lg' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>{cat}</button>
                 ))}
               </div>
-
               <div className="bg-slate-900 p-1 rounded-3xl border border-slate-800 shadow-xl overflow-hidden transition-all">
-                <button onClick={() => {
-                  if (showAddIngredient) {
-                    setShowAddIngredient(false); setEditingIngredientId(null);
-                    setNewIngredient({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' });
-                  } else { setShowAddIngredient(true); }
-                }} className="w-full p-3 sm:p-4 flex items-center justify-between text-orange-400 font-bold hover:bg-slate-800/50 transition-colors rounded-2xl text-xs sm:text-base">
-                  <span className="flex items-center gap-2"><Plus size={18}/> {editingIngredientId ? 'Edit Ingredient' : 'Add Custom Ingredient'}</span>
-                  <ChevronRight className={`transition-transform duration-300 ${showAddIngredient ? 'rotate-90' : ''}`} size={18} />
+                <button onClick={() => { if (showAddIngredient) { setShowAddIngredient(false); setEditingIngredientId(null); setNewIngredient({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' }); } else { setShowAddIngredient(true); } }} className="w-full p-3 sm:p-4 flex items-center justify-between text-orange-400 font-bold hover:bg-slate-800/50 transition-colors rounded-2xl text-xs sm:text-base">
+                  <span className="flex items-center gap-2"><Plus size={18}/> {editingIngredientId ? 'Edit Ingredient' : 'Add Custom Ingredient'}</span><ChevronRight className={`transition-transform duration-300 ${showAddIngredient ? 'rotate-90' : ''}`} size={18} />
                 </button>
-                
                 {showAddIngredient && (
                   <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-900/50">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
@@ -1587,26 +1256,11 @@ export default function GirlfriendFitnessApp() {
                   </div>
                 )}
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-4">
                 {filteredIngredients.map((item) => (
                   <div key={item.id} className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-2xl flex flex-col justify-between group hover:border-orange-500/50 transition-colors relative">
-                    <div className="flex justify-between items-start mb-2 gap-2">
-                      <div className="min-w-0">
-                        <h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate">{item.name}</h4>
-                        <p className="text-[10px] sm:text-xs text-slate-400 font-medium">Per {item.baseQuantity} {item.unit}</p>
-                      </div>
-                      <div className="flex gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                        <button onClick={() => editIngredient(item)} className="p-1 sm:p-1.5 text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={12} sm:size={14}/></button>
-                        <button onClick={() => deleteIngredient(item.id)} className="p-1 sm:p-1.5 text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={12} sm:size={14}/></button>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold mt-1 flex-wrap">
-                      <span className="text-amber-400">{item.calories} kcal</span>
-                      <span className="text-rose-400">P: {item.protein}g</span>
-                      <span className="text-cyan-400">C: {item.carbs}g</span>
-                      <span className="text-yellow-400">F: {item.fat}g</span>
-                    </div>
+                    <div className="flex justify-between items-start mb-2 gap-2"><div className="min-w-0"><h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-400 font-medium">Per {item.baseQuantity} {item.unit}</p></div><div className="flex gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editIngredient(item)} className="p-1 sm:p-1.5 text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={12} sm:size={14}/></button><button onClick={() => deleteIngredient(item.id)} className="p-1 sm:p-1.5 text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={12} sm:size={14}/></button></div></div>
+                    <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold mt-1 flex-wrap"><span className="text-amber-400">{item.calories} kcal</span><span className="text-rose-400">P: {item.protein}g</span></div>
                   </div>
                 ))}
               </div>
@@ -1617,28 +1271,18 @@ export default function GirlfriendFitnessApp() {
           {mainTab === 'schedule' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               <div className="flex justify-between items-end mb-4">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><CalendarClock className="text-blue-400" size={28} /> Schedule</h2>
-                  <p className="text-slate-400 text-xs sm:text-sm mt-1">Assign meals and workouts to days.</p>
-                </div>
+                <div><h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><CalendarClock className="text-blue-400" size={28} /> Schedule</h2><p className="text-slate-400 text-xs sm:text-sm mt-1">Assign meals and workouts to days.</p></div>
                 <button onClick={clearAllSchedule} className="text-[10px] sm:text-xs font-bold text-red-400 hover:text-red-300 bg-red-500/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors">Reset All</button>
               </div>
-
               <div className="bg-slate-900 p-4 sm:p-6 rounded-[2rem] border border-slate-800 shadow-2xl space-y-3 sm:space-y-4">
                 {days.map(day => {
                   const mealId = assignedMeals[day];
                   const workoutId = assignedWorkouts[day];
                   const isToday = day === actualToday;
-
                   return (
                     <div key={day} className={`flex flex-col lg:flex-row lg:items-center justify-between p-4 sm:p-5 rounded-2xl border transition-colors gap-3 sm:gap-4 ${isToday ? 'bg-slate-800/80 border-slate-600' : 'bg-slate-950 border-slate-800'}`}>
-                      
-                      <div className="flex items-center gap-3 sm:gap-4">
-                        <div className={`w-10 sm:w-14 text-center text-xs sm:text-sm font-bold uppercase ${isToday ? 'text-white' : 'text-slate-500'}`}>{day.substring(0,3)}</div>
-                      </div>
-                      
+                      <div className="flex items-center gap-3 sm:gap-4"><div className={`w-10 sm:w-14 text-center text-xs sm:text-sm font-bold uppercase ${isToday ? 'text-white' : 'text-slate-500'}`}>{day.substring(0,3)}</div></div>
                       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full lg:w-auto flex-1 lg:justify-end">
-                        
                         <div className="flex-1 max-w-none sm:max-w-xs lg:max-w-[240px]">
                           <label className="text-[8px] sm:text-[9px] font-bold text-cyan-400 uppercase tracking-wider mb-1 block ml-1"><Activity size={10} className="inline mr-1"/>Workout</label>
                           <div className="flex gap-2">
@@ -1649,7 +1293,6 @@ export default function GirlfriendFitnessApp() {
                             {workoutId && <button onClick={() => assignWorkoutToDay(day, null)} className="bg-slate-800 p-2.5 sm:p-3 rounded-xl text-slate-500 hover:text-red-400 transition-colors shrink-0"><Trash2 size={14} sm:size={16}/></button>}
                           </div>
                         </div>
-
                         <div className="flex-1 max-w-none sm:max-w-xs lg:max-w-[240px]">
                           <label className="text-[8px] sm:text-[9px] font-bold text-rose-400 uppercase tracking-wider mb-1 block ml-1"><Utensils size={10} className="inline mr-1"/>Meal Plan</label>
                           <div className="flex gap-2">
@@ -1660,7 +1303,6 @@ export default function GirlfriendFitnessApp() {
                             {mealId && <button onClick={() => assignMealToDay(day, null)} className="bg-slate-800 p-2.5 sm:p-3 rounded-xl text-slate-500 hover:text-red-400 transition-colors shrink-0"><Trash2 size={14} sm:size={16}/></button>}
                           </div>
                         </div>
-
                       </div>
                     </div>
                   );
@@ -1680,30 +1322,12 @@ export default function GirlfriendFitnessApp() {
                   </div>
                   <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl mt-6">
                     <h2 className="text-xl sm:text-2xl font-bold mb-2 flex items-center gap-2 sm:gap-3"><Target size={20} sm:size={24} className="text-emerald-500"/> New Entry</h2>
-                    <p className="text-[10px] sm:text-xs text-slate-400 mb-6">Log your metrics. For a lean bulk, tracking hips and arms tells you if you are building muscle!</p>
-                    
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
-                      <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50 focus-within:border-emerald-500"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">WEIGHT (KG)</label><input type="number" value={trackWeight} onChange={(e)=>setTrackWeight(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0.0" /></div>
-                      <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50 focus-within:border-emerald-500"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">WAIST (IN)</label><input type="number" value={trackWaist} onChange={(e)=>setTrackWaist(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0" /></div>
-                      <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50 focus-within:border-emerald-500"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">HIPS (IN)</label><input type="number" value={trackHip} onChange={(e)=>setTrackHip(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0" /></div>
-                      <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50 focus-within:border-emerald-500"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">ARM (IN)</label><input type="number" value={trackArm} onChange={(e)=>setTrackArm(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0" /></div>
+                      <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">WEIGHT (KG)</label><input type="number" value={trackWeight} onChange={(e)=>setTrackWeight(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0.0" /></div>
+                      <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">WAIST (IN)</label><input type="number" value={trackWaist} onChange={(e)=>setTrackWaist(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0" /></div>
+                      <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">HIPS (IN)</label><input type="number" value={trackHip} onChange={(e)=>setTrackHip(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0" /></div>
+                      <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">ARM (IN)</label><input type="number" value={trackArm} onChange={(e)=>setTrackArm(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0" /></div>
                     </div>
-
-                    <div className="mb-6 relative">
-                      <input type="file" accept="image/*" id="photo-upload" className="hidden" onChange={handlePhotoSelect} />
-                      {!photoPreview ? (
-                        <label htmlFor="photo-upload" className="flex flex-col items-center justify-center w-full h-32 sm:h-40 border-2 border-dashed border-slate-700 rounded-3xl bg-slate-950/30 hover:bg-slate-800/50 transition-colors cursor-pointer group px-4 text-center">
-                          <Camera size={32} className="text-slate-500 group-hover:text-emerald-400 mb-2 transition-colors" />
-                          <span className="text-xs sm:text-sm font-bold text-slate-400">Tap to attach weekly progress photo</span>
-                        </label>
-                      ) : (
-                        <div className="relative rounded-3xl overflow-hidden border-2 border-emerald-500/50 h-48 sm:h-64 bg-slate-800">
-                          <img src={photoPreview} alt="Preview" className="w-full h-full object-contain" />
-                          <label htmlFor="photo-upload" className="absolute top-3 right-3 bg-slate-900/80 p-2 rounded-full cursor-pointer hover:bg-emerald-500 transition-colors"><ImagePlus size={16} className="text-white" /></label>
-                        </div>
-                      )}
-                    </div>
-
                     <button onClick={saveWeeklyProgress} className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:scale-[1.02] transition-all">SAVE ENTRY</button>
                   </div>
                 </>
@@ -1753,9 +1377,7 @@ export default function GirlfriendFitnessApp() {
                               <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">WEIGHT</p><p className="text-lg sm:text-xl font-black text-white">{log.weight} kg</p></div>
                               {log.waist && <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">WAIST</p><p className="text-lg sm:text-xl font-black text-white">{log.waist}"</p></div>}
                               {log.hip && <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">HIPS</p><p className="text-lg sm:text-xl font-black text-white">{log.hip}"</p></div>}
-                              {log.arm && <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">ARM</p><p className="text-lg sm:text-xl font-black text-white">{log.arm}"</p></div>}
                             </div>
-                            {log.hasPhoto && <button className="mt-1 bg-slate-900 text-emerald-400 text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-colors flex items-center gap-1 sm:gap-2"><Camera size={12} sm:size={14} /> View Photo</button>}
                           </div>
                         ))
                       )}
@@ -1782,7 +1404,7 @@ export default function GirlfriendFitnessApp() {
                     <p><strong className="text-white">BMR (Basal Metabolic Rate):</strong> Imagine your body is a parked car with the engine running. BMR is the fuel burned just keeping the engine on.</p>
                     <p><strong className="text-white">TEF (Thermic Effect of Food):</strong> You actually burn calories digesting food! Protein requires the most energy to digest.</p>
                     <p><strong className="text-white">Activity Multiplier:</strong> We multiply your BMR by a factor to account for daily movement.</p>
-                    <p><strong className="text-white">TDEE (Total Daily Energy Expenditure):</strong> BMR + TEF + Activity. The total calories you burn in 24 hours.</p>
+                    <p><strong className="text-white">TDEE:</strong> BMR + TEF + Activity. The total calories you burn in 24 hours.</p>
                   </div>
                  </div>
 
@@ -1803,7 +1425,6 @@ export default function GirlfriendFitnessApp() {
                   <div className="space-y-3 sm:space-y-4 text-slate-300 text-xs sm:text-sm leading-relaxed">
                     <p><strong className="text-white">When to move the weights up?</strong> Use the "2-for-2" rule.</p>
                     <p>If your goal is 10 reps, and you can successfully perform <strong>12 reps on your last set, for two consecutive workouts in a row</strong>, your muscle has adapted. Move the weight up.</p>
-                    <p>If your reps drop significantly on the last set, keep the weight the same.</p>
                   </div>
                  </div>
 
@@ -1815,42 +1436,31 @@ export default function GirlfriendFitnessApp() {
                   </div>
                  </div>
                  
-                 {/* CHAPTER 5 */}
                  <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl h-full">
                   <h3 className="text-lg sm:text-xl font-bold text-orange-400 mb-3 sm:mb-4 border-b border-slate-800 pb-2 sm:pb-3">5. Weekly Training Volume</h3>
                   <div className="space-y-3 sm:space-y-4 text-slate-300 text-xs sm:text-sm leading-relaxed">
-                    <p><strong className="text-white">How many sets per week?</strong> Sports science generally recommends <strong>10 to 20 sets per muscle group per week</strong> for maximum hypertrophy. However, context matters!</p>
-                    <p><strong className="text-white">The Sweet Spot:</strong> If you are new to lifting or focusing on a lean bulk, jumping straight to 20 sets is "junk volume." It causes excessive inflammation, forcing your body to spend all its surplus calories repairing damage instead of building new muscle. That's why this program starts you in the highly effective <strong>6 to 10 sets per week</strong> range.</p>
-                    <p><strong className="text-white">When to increase volume:</strong> As you become an advanced lifter, 6-10 sets might no longer trigger growth. When your strength plateaus for several weeks, you can gradually push closer to that 10-20 set range by adding a 4th set to your exercises or adding a new isolation movement!</p>
+                    <p><strong className="text-white">How many sets per week?</strong> Sports science generally recommends <strong>10 to 20 sets per muscle group per week</strong> for maximum hypertrophy.</p>
+                    <p><strong className="text-white">The Sweet Spot:</strong> If you are new to lifting or focusing on a lean bulk, jumping straight to 20 sets is "junk volume." It causes excessive inflammation. That's why this program starts you in the highly effective <strong>6 to 10 sets per week</strong> range.</p>
                   </div>
                  </div>
 
-                 {/* CHAPTER 6 */}
                  <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl h-full">
                   <h3 className="text-lg sm:text-xl font-bold text-purple-400 mb-3 sm:mb-4 border-b border-slate-800 pb-2 sm:pb-3">6. Muscle Fibers & Genetics</h3>
                   <div className="space-y-3 sm:space-y-4 text-slate-300 text-xs sm:text-sm leading-relaxed">
                     <p>Why are some people naturally great marathon runners, while others are incredibly strong powerlifters? It comes down to genetics and muscle fibers.</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                        <strong className="text-red-400 block mb-1">Type 1 (Slow-Twitch)</strong>
-                        These fibers use oxygen efficiently for continuous, extended muscle contractions. Think of a marathon runner. They are very hard to fatigue, but they do not produce much power, and they do not grow very large.
-                      </div>
-                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                        <strong className="text-blue-400 block mb-1">Type 2 (Fast-Twitch)</strong>
-                        These fibers fire quickly and generate explosive force. Think of a sprinter or bodybuilder. They fatigue very quickly, but they are the fibers most responsible for <strong>visible muscle growth</strong> (hypertrophy).
-                      </div>
+                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800"><strong className="text-red-400 block mb-1">Type 1 (Slow-Twitch)</strong>Use oxygen efficiently for continuous muscle contractions. Think of a marathon runner.</div>
+                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800"><strong className="text-blue-400 block mb-1">Type 2 (Fast-Twitch)</strong>Fire quickly and generate explosive force. The fibers most responsible for <strong>visible muscle growth</strong> (hypertrophy).</div>
                     </div>
-                    <p className="mt-2">Lifting weights in the 8-12 rep range targets those Type 2 Fast-Twitch fibers, forcing them to adapt and grow larger to handle the heavy load next time!</p>
                   </div>
                  </div>
 
-                 {/* CHAPTER 7 */}
                  <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl md:col-span-2">
                   <h3 className="text-lg sm:text-xl font-bold text-amber-400 mb-3 sm:mb-4 border-b border-slate-800 pb-2 sm:pb-3">7. The Science of the "Lean Bulk"</h3>
                   <div className="space-y-3 sm:space-y-4 text-slate-300 text-xs sm:text-sm leading-relaxed">
-                    <p>To gain weight, you must consume more calories than your TDEE. This is a <strong>Caloric Surplus</strong>. If you eat a massive 1,000-calorie surplus (a "dirty bulk"), your body will build muscle, but it will store the remaining 700 calories as pure body fat.</p>
+                    <p>To gain weight, you must consume more calories than your TDEE. This is a <strong>Caloric Surplus</strong>. If you eat a massive 1,000-calorie surplus (a "dirty bulk"), your body will store the excess as pure body fat.</p>
                     <p>Instead, we use a <strong>Lean Bulk (+250 kcal)</strong>. This tiny surplus provides exactly enough energy to fuel muscle synthesis without spilling over into excess fat storage.</p>
-                    <p><strong className="text-white">When to change your calories:</strong> Weigh yourself weekly. The goal is to gain about 0.5kg to 1kg per month. If your weight stalls and stays exactly the same for two full weeks, congratulations—your metabolism has adapted! Your body is burning more calories because it has more muscle. At this point, simply add <strong>+100 to +150 calories</strong> to your daily target (usually in the form of extra carbs like an extra cup of rice) to keep growing.</p>
+                    <p><strong className="text-white">When to change your calories:</strong> Weigh yourself weekly. The goal is to gain about 0.5kg to 1kg per month. If your weight stalls and stays exactly the same for two full weeks, congratulations—your metabolism has adapted! At this point, simply add <strong>+100 to +150 calories</strong> to your daily target to keep growing.</p>
                   </div>
                  </div>
                </div>
