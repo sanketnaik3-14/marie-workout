@@ -13,6 +13,7 @@ import {
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 // Safely initialize Firebase so it compiles correctly in all environments
 const safeEnv = typeof process !== 'undefined' ? process.env : {};
@@ -330,16 +331,17 @@ export default function GirlfriendFitnessApp() {
     const unsubProfile = onSnapshot(doc(db, `${basePath}/settings`, 'profile'), (docSnap) => {
       if (docSnap.exists()) {
         const p = docSnap.data();
-        if (p.age) setAge(p.age);
-        if (p.weight) setWeight(p.weight);
-        if (p.height) setHeight(p.height);
-        if (p.neck) setNeck(p.neck);
-        if (p.waist) setWaist(p.waist);
-        if (p.hip) setHip(p.hip);
-        if (p.activityLevel) setActivityLevel(p.activityLevel);
-        if (p.proteinPerKg) setProteinPerKg(p.proteinPerKg);
-        if (p.fatPerKg) setFatPerKg(p.fatPerKg);
-        if (p.caloricSurplus) setCaloricSurplus(p.caloricSurplus);
+        if (p.age !== undefined) setAge(p.age);
+        if (p.weight !== undefined) setWeight(p.weight);
+        if (p.height !== undefined) setHeight(p.height);
+        if (p.neck !== undefined) setNeck(p.neck);
+        if (p.waist !== undefined) setWaist(p.waist);
+        if (p.hip !== undefined) setHip(p.hip);
+        if (p.activityLevel !== undefined) setActivityLevel(p.activityLevel);
+        if (p.proteinPerKg !== undefined) setProteinPerKg(p.proteinPerKg);
+        if (p.fatPerKg !== undefined) setFatPerKg(p.fatPerKg);
+        if (p.caloricSurplus !== undefined) setCaloricSurplus(p.caloricSurplus);
+        if (p.calcResults !== undefined) setCalcResults(p.calcResults);
       }
     });
     unsubs.push(unsubProfile);
@@ -624,8 +626,19 @@ export default function GirlfriendFitnessApp() {
   };
 
   const deleteMeasurementLog = async (id) => {
-    if (!isMock) await deleteDoc(getDocRef('measurementHistory', id));
-    else setMockMeasurementHistory(mockMeasurementHistory.filter(h => h.id !== id));
+    if (!isMock) {
+      const logToDelete = mockMeasurementHistory.find(h => h.id === id);
+      await deleteDoc(getDocRef('measurementHistory', id));
+      if (logToDelete?.photoUrl) {
+        try {
+          const storage = getStorage(app);
+          const appId = typeof __app_id !== 'undefined' ? __app_id : 'island-gains';
+          await deleteObject(ref(storage, `artifacts/${appId}/users/${user?.uid}/progress/${id}`));
+        } catch (err) { console.warn("Failed to delete orphaned photo:", err); }
+      }
+    } else {
+      setMockMeasurementHistory(mockMeasurementHistory.filter(h => h.id !== id));
+    }
     showNotification("Measurement entry deleted.");
   };
 
@@ -650,9 +663,26 @@ export default function GirlfriendFitnessApp() {
   const saveWeeklyProgress = async () => {
     if (!trackWeight) return showNotification("Please enter at least your weight!");
     const logId = Date.now().toString();
-    const dateStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const dateStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    let photoUrl = null;
+    
+    if (!isMock && photoFile) {
+      try {
+        showNotification("Uploading photo...");
+        const storage = getStorage(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'island-gains';
+        const photoRef = ref(storage, `artifacts/${appId}/users/${user?.uid}/progress/${logId}`);
+        await uploadBytes(photoRef, photoFile);
+        photoUrl = await getDownloadURL(photoRef);
+      } catch (err) {
+        console.error("Photo upload failed:", err);
+        showNotification("Failed to upload photo, but saving metrics.");
+      }
+    }
+
     const newLog = {
-      id: logId, date: dateStr, weight: parseFloat(trackWeight), hasPhoto: !!photoFile,
+      id: logId, date: dateStr, weight: parseFloat(trackWeight), hasPhoto: !!photoFile, photoUrl,
       waist: trackWaist ? parseFloat(trackWaist) : null, hip: trackHip ? parseFloat(trackHip) : null, arm: trackArm ? parseFloat(trackArm) : null,
     };
     
@@ -684,7 +714,8 @@ export default function GirlfriendFitnessApp() {
   };
 
   const saveWorkoutSession = async () => {
-    const dateStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const dateStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     let loggedSomething = false;
     
     for (const exercise of selectedWorkout.exercises) {
@@ -1166,7 +1197,7 @@ export default function GirlfriendFitnessApp() {
                   <div className="space-y-4 mb-6">
                     {draftMeals.map((meal) => (
                       <div key={meal.id} className="bg-slate-800/30 p-3 sm:p-4 rounded-2xl border border-slate-700/50">
-                        <div className="flex justify-between items-center mb-3 gap-2"><input type="text" value={meal.name} onChange={(e) => { const newMeals = [...draftMeals]; newMeals.find(m => m.id === meal.id).name = e.target.value; setDraftMeals(newMeals); }} className="bg-transparent text-white font-bold focus:outline-none border-b border-dashed border-slate-600 focus:border-purple-400 px-1 w-full min-w-0 text-sm sm:text-base" /><button onClick={() => setActiveAddingMealId(meal.id)} className="text-purple-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-purple-500/10 px-2 sm:px-3 py-1.5 rounded-lg transition-colors shrink-0"><Plus size={14}/> Add Food</button></div>
+                        <div className="flex justify-between items-center mb-3 gap-2"><input type="text" value={meal.name} onChange={(e) => setDraftMeals(draftMeals.map(m => m.id === meal.id ? { ...m, name: e.target.value } : m))} className="bg-transparent text-white font-bold focus:outline-none border-b border-dashed border-slate-600 focus:border-purple-400 px-1 w-full min-w-0 text-sm sm:text-base" /><button onClick={() => setActiveAddingMealId(meal.id)} className="text-purple-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-purple-500/10 px-2 sm:px-3 py-1.5 rounded-lg transition-colors shrink-0"><Plus size={14}/> Add Food</button></div>
                         <div className="space-y-2">
                           {meal.items.map((item, idx) => (
                             <div key={idx} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-xl border border-slate-800 text-xs sm:text-sm gap-2"><span className="font-bold text-slate-300 truncate">{item.qty}{item.unit} {item.name}</span><div className="flex items-center gap-2 sm:gap-3 shrink-0"><span className="text-[8px] sm:text-[10px] text-slate-500">{item.calories} kcal</span><button onClick={() => removeDraftItem(meal.id, idx)} className="text-slate-600 hover:text-red-400"><Trash2 size={14}/></button></div></div>
@@ -1343,6 +1374,22 @@ export default function GirlfriendFitnessApp() {
                       <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">HIPS (IN)</label><input type="number" value={trackHip} onChange={(e)=>setTrackHip(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0" /></div>
                       <div className="bg-slate-800/50 p-2 sm:p-3 rounded-2xl border border-slate-700/50"><label className="block text-[8px] sm:text-[10px] font-bold text-slate-500 text-center mb-1">ARM (IN)</label><input type="number" value={trackArm} onChange={(e)=>setTrackArm(e.target.value)} className="w-full bg-transparent text-xl sm:text-2xl font-black text-white text-center focus:outline-none" placeholder="0" /></div>
                     </div>
+                    
+                    <div className="bg-slate-800/50 p-3 sm:p-4 rounded-2xl border border-slate-700/50 mb-6 flex flex-col items-center justify-center relative overflow-hidden group">
+                      {photoPreview ? (
+                        <>
+                          <img src={photoPreview} alt="Progress Preview" className="w-full h-48 object-cover rounded-xl opacity-80" />
+                          <button onClick={() => {setPhotoPreview(null); setPhotoFile(null);}} className="absolute inset-0 m-auto w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"><Trash2 size={20}/></button>
+                        </>
+                      ) : (
+                        <label className="cursor-pointer flex flex-col items-center justify-center w-full h-32 text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors rounded-xl border-2 border-dashed border-slate-600 hover:border-emerald-500">
+                          <Camera size={32} className="mb-2" />
+                          <span className="text-xs font-bold uppercase tracking-wider">Upload Weekly Photo</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
+                        </label>
+                      )}
+                    </div>
+
                     <button onClick={saveWeeklyProgress} className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:scale-[1.02] transition-all">SAVE ENTRY</button>
                   </div>
                 </>
@@ -1393,6 +1440,9 @@ export default function GirlfriendFitnessApp() {
                               {log.waist && <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">WAIST</p><p className="text-lg sm:text-xl font-black text-white">{log.waist}"</p></div>}
                               {log.hip && <div><p className="text-[8px] sm:text-[10px] text-slate-400 font-bold">HIPS</p><p className="text-lg sm:text-xl font-black text-white">{log.hip}"</p></div>}
                             </div>
+                            {log.photoUrl && (
+                              <div className="mt-2 w-full"><img src={log.photoUrl} alt="Progress" className="w-full h-32 sm:h-48 object-cover rounded-xl border border-slate-600" /></div>
+                            )}
                           </div>
                         ))
                       )}
