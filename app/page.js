@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Activity, Utensils, Calendar, Calculator, ChevronRight, 
-  Save, BookOpen, Target, Camera, ImagePlus, CheckCircle2, 
+  Save, BookOpen, Target, CheckCircle2, 
   History, ChevronLeft, Dumbbell, Ruler, Apple, Plus, PieChart, 
   Trash2, ChefHat, Search, X, CalendarDays, Compass,
   Edit3, Timer, Lock, User, Eye, EyeOff, ClipboardList, Sun, Folder, Settings
@@ -110,6 +110,7 @@ export default function GirlfriendFitnessApp() {
   const [mainTab, setMainTab] = useState('today');
   const [subTabs, setSubTabs] = useState({ workouts: 'routines', nutrition: 'plans', profile: 'macros' });
   const [notification, setNotification] = useState('');
+  const [progressView, setProgressView] = useState('overview'); 
   const showNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(''), 3000); };
 
   // ============================================================================
@@ -444,6 +445,7 @@ export default function GirlfriendFitnessApp() {
   const [isCreatingMyMeal, setIsCreatingMyMeal] = useState(false);
   const [editingMyMealId, setEditingMyMealId] = useState(null);
   const [draftMyMealName, setDraftMyMealName] = useState('');
+  const [draftMyMealInstructions, setDraftMyMealInstructions] = useState('');
   const [draftMyMealItems, setDraftMyMealItems] = useState([]);
 
   const addIngredientToMyMeal = (ing, qty) => {
@@ -467,12 +469,12 @@ export default function GirlfriendFitnessApp() {
       const newMyMeal = {
         id: editingMyMealId || `r${Date.now()}`, name: draftMyMealName, baseQuantity: 1, unit: "Serving",
         calories: Math.round(myMealDraftTotals.calories) || 0, protein: Math.round(myMealDraftTotals.protein) || 0,
-        carbs: Math.round(myMealDraftTotals.carbs) || 0, fat: Math.round(myMealDraftTotals.fat) || 0, items: draftMyMealItems
+        carbs: Math.round(myMealDraftTotals.carbs) || 0, fat: Math.round(myMealDraftTotals.fat) || 0, items: draftMyMealItems, instructions: draftMyMealInstructions
       };
       if (!isMock) await setDoc(getDocRef('myMeals', newMyMeal.id), newMyMeal);
       else editingMyMealId ? setMyMeals(myMeals.map(r => r.id === editingMyMealId ? newMyMeal : r)) : setMyMeals([newMyMeal, ...myMeals]);
       
-      setIsCreatingMyMeal(false); setEditingMyMealId(null); setDraftMyMealName(''); setDraftMyMealItems([]); showNotification(`Custom meal saved!`);
+      setIsCreatingMyMeal(false); setEditingMyMealId(null); setDraftMyMealName(''); setDraftMyMealInstructions(''); setDraftMyMealItems([]); showNotification(`Custom meal saved!`);
     } catch (err) {
       console.error(err);
       showNotification("Error saving meal.");
@@ -491,7 +493,7 @@ export default function GirlfriendFitnessApp() {
   };
 
   const editMyMeal = (myMeal) => {
-    setDraftMyMealName(myMeal.name); setDraftMyMealItems(myMeal.items); setEditingMyMealId(myMeal.id); setIsCreatingMyMeal(true);
+    setDraftMyMealName(myMeal.name); setDraftMyMealInstructions(myMeal.instructions || ''); setDraftMyMealItems(myMeal.items); setEditingMyMealId(myMeal.id); setIsCreatingMyMeal(true);
   };
 
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
@@ -734,7 +736,6 @@ export default function GirlfriendFitnessApp() {
   // ============================================================================
   // --- CLOUD CRUD: PROGRESS & HISTORY ---
   // ============================================================================
-  const [progressView, setProgressView] = useState('overview'); 
 
   const deleteWorkoutLog = async (id) => {
     try {
@@ -1499,6 +1500,7 @@ export default function GirlfriendFitnessApp() {
                     {myMeals.map(myMeal => (
                       <div key={myMeal.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col">
                         <div className="p-5 sm:p-6 pb-4 relative"><div className="absolute top-0 right-0 p-4 opacity-5"><Utensils size={80} /></div><h3 className="font-bold text-white text-lg sm:text-xl mb-1 relative z-10">{myMeal.name}</h3><p className="text-[10px] sm:text-xs text-slate-400 mb-4 relative z-10 truncate">{myMeal.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ')}</p><div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold relative z-10 flex-wrap"><div className="text-amber-400">{myMeal.calories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div></div></div>
+                        {myMeal.instructions && <div className="px-5 sm:px-6 pb-4"><p className="text-[10px] sm:text-xs text-slate-500 italic line-clamp-3 relative z-10">"{myMeal.instructions}"</p></div>}
                         <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto relative z-10"><button onClick={() => editMyMeal(myMeal)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button><button onClick={() => deleteMyMeal(myMeal.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button></div>
                       </div>
                     ))}
@@ -1506,9 +1508,12 @@ export default function GirlfriendFitnessApp() {
                 </>
               ) : (
                 <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
-                  <button onClick={() => { setIsCreatingMyMeal(false); setEditingMyMealId(null); setDraftMyMealName(''); setDraftMyMealItems([]); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
+                  <button onClick={() => { setIsCreatingMyMeal(false); setEditingMyMealId(null); setDraftMyMealName(''); setDraftMyMealInstructions(''); setDraftMyMealItems([]); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
                   <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingMyMealId ? 'Edit Meal' : 'Custom Meal Builder'}</h3>
-                  <input type="text" placeholder="Meal Name (e.g. Protein Shake)" value={draftMyMealName} onChange={(e)=>setDraftMyMealName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm sm:text-base font-bold text-white focus:outline-none focus:border-yellow-500 mb-6" />
+                  <div className="space-y-3 mb-6">
+                    <input type="text" placeholder="Meal Name (e.g. Protein Shake)" value={draftMyMealName} onChange={(e)=>setDraftMyMealName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm sm:text-base font-bold text-white focus:outline-none focus:border-yellow-500" />
+                    <textarea placeholder="Recipe Instructions / Notes (Optional)... Paste URL or steps here!" value={draftMyMealInstructions} onChange={(e)=>setDraftMyMealInstructions(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm text-slate-300 focus:outline-none focus:border-yellow-500 min-h-[100px] resize-y" />
+                  </div>
                   {draftMyMealItems.length > 0 && (
                     <div className="mb-6 space-y-2">
                       {draftMyMealItems.map((d, idx) => (
