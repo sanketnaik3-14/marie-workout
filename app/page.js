@@ -43,8 +43,7 @@ const DEFAULT_INGREDIENTS = [
   { id: 'i6', name: "Rolled Oats", category: "Carbs", baseQuantity: 50, unit: "g", protein: 6.5, carbs: 34, fat: 3.2, calories: 189 },
   { id: 'i7', name: "Peanut Butter", category: "Fats", baseQuantity: 1, unit: "Tbsp", protein: 4, carbs: 3, fat: 8, calories: 95 },
 ];
-
-const DEFAULT_RECIPES = [];
+const DEFAULT_MY_MEALS = [];
 
 const DEFAULT_TEMPLATES = [];
 
@@ -89,7 +88,7 @@ const SUB_TABS = {
   ],
   nutrition: [
     { id: 'plans', label: "Meal Plans", icon: CalendarDays },
-    { id: 'recipes', label: "Recipes", icon: ChefHat },
+    { id: 'myMeals', label: "My Meals", icon: ChefHat },
     { id: 'ingredients', label: "Foods", icon: Apple },
   ],
   profile: [
@@ -112,6 +111,33 @@ export default function GirlfriendFitnessApp() {
   const [subTabs, setSubTabs] = useState({ workouts: 'routines', nutrition: 'plans', profile: 'macros' });
   const [notification, setNotification] = useState('');
   const showNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(''), 3000); };
+
+  // ============================================================================
+  // --- HELPER: COLOR CODING ---
+  // ============================================================================
+  const getCategoryColor = (cat) => {
+    switch(cat) {
+      case 'Proteins': return 'text-rose-400 border-rose-500/30 bg-rose-500/10';
+      case 'Carbs': return 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10';
+      case 'Fats': return 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10';
+      case 'Spices': return 'text-purple-400 border-purple-500/30 bg-purple-500/10';
+      case 'Sauces': return 'text-orange-400 border-orange-500/30 bg-orange-500/10';
+      default: return 'text-slate-400 border-slate-700 bg-slate-800';
+    }
+  };
+
+  const getTargetColor = (target) => {
+    switch(target) {
+      case 'Legs & Glutes': return 'text-indigo-400 border-indigo-500/30 bg-indigo-500/10';
+      case 'Chest': return 'text-sky-400 border-sky-500/30 bg-sky-500/10';
+      case 'Back': return 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
+      case 'Core': return 'text-amber-400 border-amber-500/30 bg-amber-500/10';
+      case 'Cardio': return 'text-rose-400 border-rose-500/30 bg-rose-500/10';
+      case 'Shoulders': return 'text-purple-400 border-purple-500/30 bg-purple-500/10';
+      case 'Arms': return 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10';
+      default: return 'text-slate-400 border-slate-700 bg-slate-800';
+    }
+  };
 
   // --- STATE: PROFILE & MACRO CALCULATOR ---
   const [age, setAge] = useState(34);
@@ -288,7 +314,7 @@ export default function GirlfriendFitnessApp() {
 
   // --- REAL-TIME DATABASE STATE ---
   const [ingredients, setIngredients] = useState(DEFAULT_INGREDIENTS);
-  const [recipes, setRecipes] = useState(DEFAULT_RECIPES);
+  const [myMeals, setMyMeals] = useState(DEFAULT_MY_MEALS);
   const [mealTemplates, setMealTemplates] = useState(DEFAULT_TEMPLATES);
   const [exercises, setExercises] = useState(DEFAULT_EXERCISES);
   const [workoutTemplates, setWorkoutTemplates] = useState(DEFAULT_WORKOUT_TEMPLATES);
@@ -315,7 +341,7 @@ export default function GirlfriendFitnessApp() {
     };
 
     syncCol('ingredients', setIngredients);
-    syncCol('recipes', setRecipes);
+    syncCol('myMeals', setMyMeals);
     syncCol('mealTemplates', setMealTemplates);
     syncCol('exercises', setExercises);
     syncCol('workoutTemplates', setWorkoutTemplates);
@@ -338,7 +364,7 @@ export default function GirlfriendFitnessApp() {
         
         // Seed default databases ONLY on very first account creation
         DEFAULT_INGREDIENTS.forEach(item => setDoc(doc(db, `${basePath}/ingredients`, item.id.toString()), item));
-        DEFAULT_RECIPES.forEach(item => setDoc(doc(db, `${basePath}/recipes`, item.id.toString()), item));
+        DEFAULT_MY_MEALS.forEach(item => setDoc(doc(db, `${basePath}/myMeals`, item.id.toString()), item));
         DEFAULT_TEMPLATES.forEach(item => setDoc(doc(db, `${basePath}/mealTemplates`, item.id.toString()), item));
         DEFAULT_EXERCISES.forEach(item => setDoc(doc(db, `${basePath}/exercises`, item.id.toString()), item));
         DEFAULT_WORKOUT_TEMPLATES.forEach(item => setDoc(doc(db, `${basePath}/workoutTemplates`, item.id.toString()), item));
@@ -375,6 +401,7 @@ export default function GirlfriendFitnessApp() {
   const [showAddIngredient, setShowAddIngredient] = useState(false);
   const [newIngredient, setNewIngredient] = useState({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' });
   const [editingIngredientId, setEditingIngredientId] = useState(null);
+  const [inlineAddFoodMode, setInlineAddFoodMode] = useState(false);
   const ingredientCategories = ['All', 'Proteins', 'Carbs', 'Fats', 'Spices', 'Sauces'];
   const filteredIngredients = activeIngredientFilter === 'All' ? ingredients : ingredients.filter(i => i.category === activeIngredientFilter);
 
@@ -391,7 +418,7 @@ export default function GirlfriendFitnessApp() {
       else editingIngredientId ? setIngredients(ingredients.map(i => i.id === editingIngredientId ? addedItem : i)) : setIngredients([addedItem, ...ingredients]);
       
       setNewIngredient({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' });
-      setShowAddIngredient(false); setEditingIngredientId(null); showNotification(`${addedItem.name} saved!`);
+      setShowAddIngredient(false); setEditingIngredientId(null); setInlineAddFoodMode(false); showNotification(`${addedItem.name} saved!`);
     } catch (err) {
       console.error(err);
       showNotification("Error saving ingredient.");
@@ -414,12 +441,12 @@ export default function GirlfriendFitnessApp() {
     }
   };
 
-  const [isCreatingRecipe, setIsCreatingRecipe] = useState(false);
-  const [editingRecipeId, setEditingRecipeId] = useState(null);
-  const [draftRecipeName, setDraftRecipeName] = useState('');
-  const [draftRecipeItems, setDraftRecipeItems] = useState([]);
+  const [isCreatingMyMeal, setIsCreatingMyMeal] = useState(false);
+  const [editingMyMealId, setEditingMyMealId] = useState(null);
+  const [draftMyMealName, setDraftMyMealName] = useState('');
+  const [draftMyMealItems, setDraftMyMealItems] = useState([]);
 
-  const addIngredientToRecipe = (ing, qty) => {
+  const addIngredientToMyMeal = (ing, qty) => {
     if (!qty || qty <= 0) return;
     const ratio = qty / ing.baseQuantity;
     const newItem = {
@@ -429,42 +456,42 @@ export default function GirlfriendFitnessApp() {
       carbs: Math.round(ing.carbs * ratio * 10)/10 || 0, 
       fat: Math.round(ing.fat * ratio * 10)/10 || 0
     };
-    setDraftRecipeItems([...draftRecipeItems, newItem]);
+    setDraftMyMealItems([...draftMyMealItems, newItem]);
   };
 
-  const recipeDraftTotals = draftRecipeItems.reduce((acc, curr) => ({ calories: acc.calories + curr.calories, protein: acc.protein + curr.protein, carbs: acc.carbs + curr.carbs, fat: acc.fat + curr.fat }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+  const myMealDraftTotals = draftMyMealItems.reduce((acc, curr) => ({ calories: acc.calories + curr.calories, protein: acc.protein + curr.protein, carbs: acc.carbs + curr.carbs, fat: acc.fat + curr.fat }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-  const saveRecipe = async () => {
+  const saveMyMeal = async () => {
     try {
-      if (!draftRecipeName || draftRecipeItems.length === 0) return showNotification("Need a name and ingredients!");
-      const newRecipe = {
-        id: editingRecipeId || `r${Date.now()}`, name: draftRecipeName, baseQuantity: 1, unit: "Serving",
-        calories: Math.round(recipeDraftTotals.calories) || 0, protein: Math.round(recipeDraftTotals.protein) || 0,
-        carbs: Math.round(recipeDraftTotals.carbs) || 0, fat: Math.round(recipeDraftTotals.fat) || 0, items: draftRecipeItems
+      if (!draftMyMealName || draftMyMealItems.length === 0) return showNotification("Need a name and ingredients!");
+      const newMyMeal = {
+        id: editingMyMealId || `r${Date.now()}`, name: draftMyMealName, baseQuantity: 1, unit: "Serving",
+        calories: Math.round(myMealDraftTotals.calories) || 0, protein: Math.round(myMealDraftTotals.protein) || 0,
+        carbs: Math.round(myMealDraftTotals.carbs) || 0, fat: Math.round(myMealDraftTotals.fat) || 0, items: draftMyMealItems
       };
-      if (!isMock) await setDoc(getDocRef('recipes', newRecipe.id), newRecipe);
-      else editingRecipeId ? setRecipes(recipes.map(r => r.id === editingRecipeId ? newRecipe : r)) : setRecipes([newRecipe, ...recipes]);
+      if (!isMock) await setDoc(getDocRef('myMeals', newMyMeal.id), newMyMeal);
+      else editingMyMealId ? setMyMeals(myMeals.map(r => r.id === editingMyMealId ? newMyMeal : r)) : setMyMeals([newMyMeal, ...myMeals]);
       
-      setIsCreatingRecipe(false); setEditingRecipeId(null); setDraftRecipeName(''); setDraftRecipeItems([]); showNotification(`Recipe saved!`);
+      setIsCreatingMyMeal(false); setEditingMyMealId(null); setDraftMyMealName(''); setDraftMyMealItems([]); showNotification(`Custom meal saved!`);
     } catch (err) {
       console.error(err);
-      showNotification("Error saving recipe.");
+      showNotification("Error saving meal.");
     }
   };
 
-  const deleteRecipe = async (id) => {
+  const deleteMyMeal = async (id) => {
     try {
-      if (!isMock) await deleteDoc(getDocRef('recipes', id));
-      else setRecipes(recipes.filter(r => r.id !== id));
-      showNotification("Recipe deleted.");
+      if (!isMock) await deleteDoc(getDocRef('myMeals', id));
+      else setMyMeals(myMeals.filter(r => r.id !== id));
+      showNotification("Custom meal deleted.");
     } catch (err) {
       console.error(err);
-      showNotification("Error deleting recipe.");
+      showNotification("Error deleting meal.");
     }
   };
 
-  const editRecipe = (recipe) => {
-    setDraftRecipeName(recipe.name); setDraftRecipeItems(recipe.items); setEditingRecipeId(recipe.id); setIsCreatingRecipe(true);
+  const editMyMeal = (myMeal) => {
+    setDraftMyMealName(myMeal.name); setDraftMyMealItems(myMeal.items); setEditingMyMealId(myMeal.id); setIsCreatingMyMeal(true);
   };
 
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
@@ -549,6 +576,7 @@ export default function GirlfriendFitnessApp() {
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [editingExerciseId, setEditingExerciseId] = useState(null);
   const [newExercise, setNewExercise] = useState({ name: '', target: 'Legs & Glutes', equipment: 'Dumbbell' });
+  const [inlineAddExerciseMode, setInlineAddExerciseMode] = useState(false);
   const exerciseTargets = ['All', 'Legs & Glutes', 'Back', 'Chest', 'Shoulders', 'Arms', 'Core', 'Cardio'];
   const filteredExercises = activeExerciseFilter === 'All' ? exercises : exercises.filter(e => e.target === activeExerciseFilter);
 
@@ -561,7 +589,7 @@ export default function GirlfriendFitnessApp() {
       else editingExerciseId ? setExercises(exercises.map(e => e.id === editingExerciseId ? addedItem : e)) : setExercises([...exercises, addedItem]);
   
       setNewExercise({ name: '', target: 'Legs & Glutes', equipment: 'Dumbbell' });
-      setShowAddExercise(false); setEditingExerciseId(null); showNotification(`${addedItem.name} saved!`);
+      setShowAddExercise(false); setEditingExerciseId(null); setInlineAddExerciseMode(false); showNotification(`${addedItem.name} saved!`);
     } catch (err) {
       console.error(err);
       showNotification("Error saving exercise.");
@@ -1050,9 +1078,20 @@ export default function GirlfriendFitnessApp() {
                       <div className="mb-4 bg-slate-950 p-3 sm:p-4 rounded-xl border border-emerald-500/50 animate-in fade-in zoom-in-95 duration-200">
                         <h4 className="text-[10px] sm:text-xs font-bold text-slate-500 mb-3">Add outside of plan:</h4>
                         <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
-                          {[...recipes, ...ingredients].map(ing => (
+                          {[...myMeals, ...ingredients].map(ing => (
                             <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2">
-                              <p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p>
+                              <div className="min-w-0 flex-1 pr-2">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1 truncate">
+                                    {ing.items ? <ChefHat size={12} className="text-yellow-400 shrink-0"/> : <Apple size={12} className="text-orange-400 shrink-0"/>} 
+                                    <span className="truncate">{ing.name}</span>
+                                  </p>
+                                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${ing.items ? 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' : getCategoryColor(ing.category)}`}>{ing.items ? 'Meal' : ing.category}</span>
+                                </div>
+                                <div className="flex gap-2 text-[9px] font-bold">
+                                  <span className="text-amber-400">{ing.calories} kcal</span><span className="text-rose-400">P:{ing.protein}g</span><span className="text-cyan-400">C:{ing.carbs}g</span><span className="text-yellow-400">F:{ing.fat}g</span>
+                                </div>
+                              </div>
                               <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                                 <input type="number" inputMode="decimal" placeholder={ing.baseQuantity} id={`extra-${ing.id}`} className="w-12 sm:w-14 bg-slate-800 text-white font-bold p-1 rounded-md text-center text-[10px] sm:text-xs focus:outline-none" />
                                 <span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span>
@@ -1193,13 +1232,30 @@ export default function GirlfriendFitnessApp() {
                       <div className="bg-slate-800/30 p-4 rounded-2xl border border-slate-700/50 mb-6 relative">
                         <div className="flex justify-between items-center">
                           <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase flex items-center gap-1 sm:gap-2"><Search size={14}/> Add from Library</h4>
-                          <button onClick={() => setAddingRoutineExercise(!addingRoutineExercise)} className="text-cyan-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-cyan-500/10 px-3 py-1.5 rounded-lg"><Plus size={14}/> Browse</button>
+                          <div className="flex gap-2">
+                            <button onClick={() => setInlineAddExerciseMode(!inlineAddExerciseMode)} className="text-cyan-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-cyan-500/10 px-2 py-1.5 rounded-lg"><Plus size={12}/> New</button>
+                            <button onClick={() => setAddingRoutineExercise(!addingRoutineExercise)} className="text-cyan-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-cyan-500/10 px-3 py-1.5 rounded-lg"><Search size={14}/> Browse</button>
+                          </div>
                         </div>
+                        {inlineAddExerciseMode && (
+                          <div className="mt-4 p-4 border border-cyan-500/30 bg-slate-900 rounded-xl animate-in fade-in zoom-in-95 duration-200">
+                            <h5 className="text-[10px] font-bold text-cyan-400 uppercase mb-3">Create Quick Exercise</h5>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                              <div><input type="text" value={newExercise.name} onChange={(e)=>setNewExercise({...newExercise, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs" placeholder="Name" /></div>
+                              <div><select value={newExercise.target} onChange={(e)=>setNewExercise({...newExercise, target: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs">{exerciseTargets.filter(t=>t!=='All').map(t => <option key={t}>{t}</option>)}</select></div>
+                              <div><input type="text" value={newExercise.equipment} onChange={(e)=>setNewExercise({...newExercise, equipment: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs" placeholder="Equipment" /></div>
+                            </div>
+                            <button onClick={saveExercise} className="w-full bg-cyan-500 text-slate-950 py-2 rounded-lg font-bold text-xs shadow-lg">SAVE TO LIBRARY</button>
+                          </div>
+                        )}
                         {addingRoutineExercise && (
                           <div className="mt-4 max-h-48 overflow-y-auto space-y-2 scrollbar-hide border-t border-slate-700/50 pt-4 animate-in fade-in zoom-in-95 duration-200">
                             {exercises.map(ex => (
                               <div key={ex.id} className="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <div className="min-w-0 pr-2"><p className="text-xs sm:text-sm font-bold text-white truncate">{ex.name}</p><p className="text-[9px] sm:text-[10px] text-cyan-400 truncate">{ex.target}</p></div>
+                                <div className="min-w-0 pr-2">
+                                  <p className="text-xs sm:text-sm font-bold text-white truncate">{ex.name}</p>
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border mt-1 inline-block ${getTargetColor(ex.target)}`}>{ex.target}</span>
+                                </div>
                                 <button onClick={() => addExerciseToRoutine(ex)} className="bg-cyan-500/20 text-cyan-400 p-1.5 rounded-md hover:bg-cyan-500 hover:text-white transition-colors shrink-0"><Plus size={16} /></button>
                               </div>
                             ))}
@@ -1244,7 +1300,7 @@ export default function GirlfriendFitnessApp() {
                       <div className="min-w-0 pr-2"><h4 className="font-bold text-white text-base sm:text-lg leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Equipment: {item.equipment}</p></div>
                       <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editExercise(item)} className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={16}/></button><button onClick={() => deleteExercise(item.id)} className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={16}/></button></div>
                     </div>
-                    <div><span className="text-[9px] sm:text-[10px] font-bold px-2 py-1 rounded-md bg-slate-800 text-cyan-400 border border-slate-700">{item.target}</span></div>
+                    <div><span className={`text-[9px] sm:text-[10px] font-bold px-2 py-1 rounded-md border ${getTargetColor(item.target)}`}>{item.target}</span></div>
                   </div>
                 ))}
               </div>
@@ -1374,10 +1430,52 @@ export default function GirlfriendFitnessApp() {
                         {activeAddingMealId === meal.id && (
                           <div className="mt-4 bg-slate-950 p-3 sm:p-4 rounded-xl border border-purple-500/50 animate-in fade-in zoom-in-95 duration-200 relative">
                             <button onClick={() => setActiveAddingMealId(null)} className="absolute top-2 right-2 text-slate-500 hover:text-white"><X size={16}/></button>
-                            <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><Search size={14}/> Search Database</h4>
+                            <div className="flex justify-between items-center mb-3">
+                              <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase flex items-center gap-2"><Search size={14}/> Search Database</h4>
+                              <button onClick={() => setInlineAddFoodMode(!inlineAddFoodMode)} className="text-orange-400 hover:text-white text-[10px] sm:text-xs font-bold bg-orange-500/10 px-2 py-1 rounded-lg flex items-center gap-1"><Plus size={12}/> New Food</button>
+                            </div>
+                            {inlineAddFoodMode && (
+                              <div className="mb-4 p-4 border border-orange-500/30 bg-slate-900 rounded-xl animate-in fade-in zoom-in-95 duration-200">
+                                <h5 className="text-[10px] font-bold text-orange-400 uppercase mb-3">Create Quick Food</h5>
+                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                  <div><input type="text" value={newIngredient.name} onChange={(e)=>setNewIngredient({...newIngredient, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Food Name" /></div>
+                                  <div><select value={newIngredient.category} onChange={(e)=>setNewIngredient({...newIngredient, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs"><option>Proteins</option><option>Carbs</option><option>Fats</option><option>Spices</option><option>Sauces</option></select></div>
+                                </div>
+                                <div className="grid grid-cols-5 gap-2 mb-3">
+                                  <div className="col-span-2"><input type="number" inputMode="decimal" value={newIngredient.baseQuantity} onChange={(e)=>setNewIngredient({...newIngredient, baseQuantity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Qty" /></div>
+                                  <div className="col-span-3"><input type="text" value={newIngredient.unit} onChange={(e)=>setNewIngredient({...newIngredient, unit: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Unit (e.g. g)" /></div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 mb-4">
+                                  <div><input type="number" inputMode="decimal" value={newIngredient.protein} onChange={(e)=>setNewIngredient({...newIngredient, protein: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-rose-500 text-xs text-center" placeholder="Pro(g)" /></div>
+                                  <div><input type="number" inputMode="decimal" value={newIngredient.carbs} onChange={(e)=>setNewIngredient({...newIngredient, carbs: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs text-center" placeholder="Carb(g)" /></div>
+                                  <div><input type="number" inputMode="decimal" value={newIngredient.fat} onChange={(e)=>setNewIngredient({...newIngredient, fat: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-yellow-500 text-xs text-center" placeholder="Fat(g)" /></div>
+                                </div>
+                                <button onClick={saveIngredient} className="w-full bg-orange-500 text-white py-2 rounded-lg font-bold text-xs shadow-lg">SAVE TO LIBRARY</button>
+                              </div>
+                            )}
                             <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
-                              {[...recipes, ...ingredients].map(ing => (
-                                <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1 sm:gap-2 truncate">{ing.items ? <ChefHat size={10} className="text-yellow-400 shrink-0"/> : <Apple size={10} className="text-orange-400 shrink-0"/>} <span className="truncate">{ing.name}</span></p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" inputMode="decimal" placeholder={ing.baseQuantity} id={`qty-${meal.id}-${ing.id}`} className="w-10 sm:w-14 bg-slate-800 text-white font-bold p-1 sm:p-1.5 rounded-md text-center text-[10px] sm:text-xs focus:outline-none focus:ring-1 ring-purple-500" /><span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span><button onClick={() => { const val = document.getElementById(`qty-${meal.id}-${ing.id}`).value || ing.baseQuantity; addItemToDraftMeal(ing, val); document.getElementById(`qty-${meal.id}-${ing.id}`).value = ''; }} className="bg-purple-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-purple-600 transition-colors"><Plus size={12} /></button></div></div>
+                              {[...myMeals, ...ingredients].map(ing => (
+                                <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2">
+                                  <div className="min-w-0 flex-1 pr-2">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1 truncate">
+                                        {ing.items ? <ChefHat size={12} className="text-yellow-400 shrink-0"/> : <Apple size={12} className="text-orange-400 shrink-0"/>} 
+                                        <span className="truncate">{ing.name}</span>
+                                      </p>
+                                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${ing.items ? 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' : getCategoryColor(ing.category)}`}>
+                                        {ing.items ? 'Meal' : ing.category}
+                                      </span>
+                                    </div>
+                                    <div className="flex gap-2 text-[9px] font-bold">
+                                      <span className="text-amber-400">{ing.calories} kcal</span><span className="text-rose-400">P:{ing.protein}g</span><span className="text-cyan-400">C:{ing.carbs}g</span><span className="text-yellow-400">F:{ing.fat}g</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                                    <input type="number" inputMode="decimal" placeholder={ing.baseQuantity} id={`qty-${meal.id}-${ing.id}`} className="w-10 sm:w-14 bg-slate-800 text-white font-bold p-1 sm:p-1.5 rounded-md text-center text-[10px] sm:text-xs focus:outline-none focus:ring-1 ring-purple-500" />
+                                    <span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span>
+                                    <button onClick={() => { const val = document.getElementById(`qty-${meal.id}-${ing.id}`).value || ing.baseQuantity; addItemToDraftMeal(ing, val); document.getElementById(`qty-${meal.id}-${ing.id}`).value = ''; }} className="bg-purple-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-purple-600 transition-colors"><Plus size={12} /></button>
+                                  </div>
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -1391,30 +1489,30 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
-          {/* === NUTRITION HUB (Recipes) === */}
-          {mainTab === 'nutrition' && subTabs.nutrition === 'recipes' && (
+          {/* === NUTRITION HUB (My Meals) === */}
+          {mainTab === 'nutrition' && subTabs.nutrition === 'myMeals' && (
             <div className="animate-in fade-in duration-500 space-y-6">
-              {!isCreatingRecipe ? (
+              {!isCreatingMyMeal ? (
                 <>
-                  <button onClick={() => setIsCreatingRecipe(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-yellow-400 text-yellow-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create New Recipe</button>
+                  <button onClick={() => setIsCreatingMyMeal(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-yellow-400 text-yellow-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create Custom Meal</button>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                    {recipes.map(recipe => (
-                      <div key={recipe.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col">
-                        <div className="p-5 sm:p-6 pb-4 relative"><div className="absolute top-0 right-0 p-4 opacity-5"><Utensils size={80} /></div><h3 className="font-bold text-white text-lg sm:text-xl mb-1 relative z-10">{recipe.name}</h3><p className="text-[10px] sm:text-xs text-slate-400 mb-4 relative z-10 truncate">{recipe.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ')}</p><div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold relative z-10 flex-wrap"><div className="text-amber-400">{recipe.calories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div></div></div>
-                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto relative z-10"><button onClick={() => editRecipe(recipe)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button><button onClick={() => deleteRecipe(recipe.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button></div>
+                    {myMeals.map(myMeal => (
+                      <div key={myMeal.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col">
+                        <div className="p-5 sm:p-6 pb-4 relative"><div className="absolute top-0 right-0 p-4 opacity-5"><Utensils size={80} /></div><h3 className="font-bold text-white text-lg sm:text-xl mb-1 relative z-10">{myMeal.name}</h3><p className="text-[10px] sm:text-xs text-slate-400 mb-4 relative z-10 truncate">{myMeal.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ')}</p><div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold relative z-10 flex-wrap"><div className="text-amber-400">{myMeal.calories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div></div></div>
+                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto relative z-10"><button onClick={() => editMyMeal(myMeal)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button><button onClick={() => deleteMyMeal(myMeal.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button></div>
                       </div>
                     ))}
                   </div>
                 </>
               ) : (
                 <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
-                  <button onClick={() => { setIsCreatingRecipe(false); setEditingRecipeId(null); setDraftRecipeName(''); setDraftRecipeItems([]); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
-                  <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingRecipeId ? 'Edit Recipe' : 'Recipe Builder'}</h3>
-                  <input type="text" placeholder="Recipe Name" value={draftRecipeName} onChange={(e)=>setDraftRecipeName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm sm:text-base font-bold text-white focus:outline-none focus:border-yellow-500 mb-6" />
-                  {draftRecipeItems.length > 0 && (
+                  <button onClick={() => { setIsCreatingMyMeal(false); setEditingMyMealId(null); setDraftMyMealName(''); setDraftMyMealItems([]); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingMyMealId ? 'Edit Meal' : 'Custom Meal Builder'}</h3>
+                  <input type="text" placeholder="Meal Name (e.g. Protein Shake)" value={draftMyMealName} onChange={(e)=>setDraftMyMealName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm sm:text-base font-bold text-white focus:outline-none focus:border-yellow-500 mb-6" />
+                  {draftMyMealItems.length > 0 && (
                     <div className="mb-6 space-y-2">
-                      {draftRecipeItems.map((d, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-700/50 gap-2"><span className="font-bold text-xs sm:text-sm text-white truncate">{d.qty}{d.unit} {d.name}</span><div className="flex items-center gap-2 sm:gap-3 shrink-0"><span className="text-[8px] sm:text-[10px] text-slate-500">{d.calories} kcal</span><button onClick={() => setDraftRecipeItems(draftRecipeItems.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400"><Trash2 size={14}/></button></div></div>
+                      {draftMyMealItems.map((d, idx) => (
+                        <div key={idx} className="flex justify-between items-center bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-700/50 gap-2"><span className="font-bold text-xs sm:text-sm text-white truncate">{d.qty}{d.unit} {d.name}</span><div className="flex items-center gap-2 sm:gap-3 shrink-0"><span className="text-[8px] sm:text-[10px] text-slate-500">{d.calories} kcal</span><button onClick={() => setDraftMyMealItems(draftMyMealItems.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400"><Trash2 size={14}/></button></div></div>
                       ))}
                     </div>
                   )}
@@ -1422,11 +1520,25 @@ export default function GirlfriendFitnessApp() {
                     <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><Search size={14}/> Search Database</h4>
                     <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
                       {ingredients.map(ing => (
-                        <div key={ing.id} className="flex justify-between items-center bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" inputMode="decimal" placeholder={ing.baseQuantity} id={`rec-qty-${ing.id}`} className="w-10 sm:w-16 bg-slate-800 text-white font-bold p-1 sm:p-2 rounded-lg text-center text-[10px] sm:text-sm focus:outline-none focus:ring-1 ring-yellow-500" /><button onClick={() => { const val = document.getElementById(`rec-qty-${ing.id}`).value || ing.baseQuantity; addIngredientToRecipe(ing, val); document.getElementById(`rec-qty-${ing.id}`).value = ''; }} className="bg-slate-800 p-1 sm:p-2 rounded-lg text-slate-400 hover:bg-yellow-500 hover:text-white transition-colors"><Plus size={14} /></button></div></div>
+                        <div key={ing.id} className="flex justify-between items-center bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 gap-2">
+                          <div className="min-w-0 flex-1 pr-2">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p>
+                              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${getCategoryColor(ing.category)}`}>{ing.category}</span>
+                            </div>
+                            <div className="flex gap-2 text-[9px] font-bold">
+                              <span className="text-amber-400">{ing.calories} kcal</span><span className="text-rose-400">P:{ing.protein}g</span><span className="text-cyan-400">C:{ing.carbs}g</span><span className="text-yellow-400">F:{ing.fat}g</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                            <input type="number" inputMode="decimal" placeholder={ing.baseQuantity} id={`rec-qty-${ing.id}`} className="w-10 sm:w-16 bg-slate-800 text-white font-bold p-1 sm:p-2 rounded-lg text-center text-[10px] sm:text-sm focus:outline-none focus:ring-1 ring-yellow-500" />
+                            <button onClick={() => { const val = document.getElementById(`rec-qty-${ing.id}`).value || ing.baseQuantity; addIngredientToMyMeal(ing, val); document.getElementById(`rec-qty-${ing.id}`).value = ''; }} className="bg-slate-800 p-1 sm:p-2 rounded-lg text-slate-400 hover:bg-yellow-500 hover:text-white transition-colors"><Plus size={14} /></button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
-                  <button onClick={saveRecipe} className="w-full bg-yellow-500 text-slate-950 py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-yellow-400 transition-colors">SAVE RECIPE</button>
+                  <button onClick={saveMyMeal} className="w-full bg-yellow-500 text-slate-950 py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-yellow-400 transition-colors">SAVE MEAL</button>
                 </div>
               )}
             </div>
@@ -1467,7 +1579,7 @@ export default function GirlfriendFitnessApp() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-4">
                 {filteredIngredients.map((item) => (
                   <div key={item.id} className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-2xl flex flex-col justify-between group hover:border-orange-500/50 transition-colors relative">
-                        <div className="flex justify-between items-start mb-2 gap-2"><div className="min-w-0"><h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-400 font-medium">Per {item.baseQuantity} {item.unit}</p></div><div className="flex gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editIngredient(item)} className="p-2 sm:p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={16}/></button><button onClick={() => deleteIngredient(item.id)} className="p-2 sm:p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={16}/></button></div></div>
+                        <div className="flex justify-between items-start mb-2 gap-2"><div className="min-w-0"><h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-400 font-medium mb-1">Per {item.baseQuantity} {item.unit}</p><span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${getCategoryColor(item.category)}`}>{item.category}</span></div><div className="flex gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editIngredient(item)} className="p-2 sm:p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={16}/></button><button onClick={() => deleteIngredient(item.id)} className="p-2 sm:p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={16}/></button></div></div>
                     <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold mt-1 flex-wrap">
                       <span className="text-amber-400">{item.calories} kcal</span>
                       <span className="text-rose-400">P: {item.protein}g</span>
