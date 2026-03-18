@@ -1567,8 +1567,8 @@ export default function GirlfriendFitnessApp() {
                           </div>
                         )}
                       </div>
-                    ))}
-                    }
+                      );
+                    })}
                   </div>
                   <button onClick={saveTemplate} className="w-full bg-purple-500 text-white py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-purple-600 transition-colors">SAVE MEAL PLAN</button>
                 </div>
