@@ -1334,41 +1334,58 @@ export default function GirlfriendFitnessApp() {
           })()}
 
           {/* === WORKOUTS HUB (Exercises) === */}
-          {mainTab === 'workouts' && subTabs.workouts === 'exercises' && (
-            <div className="animate-in fade-in duration-500 space-y-6">
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
-                {exerciseTargets.map(cat => (
-                  <button key={cat} onClick={() => setActiveExerciseFilter(cat)} className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeExerciseFilter === cat ? 'bg-cyan-500 text-white shadow-lg' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>{cat}</button>
-                ))}
+          {mainTab === 'workouts' && subTabs.workouts === 'exercises' && (() => {
+            const exerciseBuilderNode = (
+              <div className="bg-slate-900 border border-cyan-500 p-5 rounded-[2rem] shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+                <button onClick={() => { setShowAddExercise(false); setEditingExerciseId(null); setNewExercise({ name: '', target: 'Legs & Glutes', equipment: 'Dumbbell' }); }} className="absolute top-4 right-4 sm:top-5 sm:right-5 text-slate-500 hover:text-white"><X size={20}/></button>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-5 pr-8">{editingExerciseId ? 'Edit Exercise' : 'Custom Exercise'}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                  <div><label className="text-xs font-bold text-slate-500 mb-1 block">EXERCISE NAME</label><input type="text" value={newExercise.name} onChange={(e)=>setNewExercise({...newExercise, name: e.target.value})} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm" placeholder="e.g. Hip Thrusts" /></div>
+                  <div><label className="text-xs font-bold text-slate-500 mb-1 block">TARGET MUSCLE</label><select value={newExercise.target} onChange={(e)=>setNewExercise({...newExercise, target: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm">{exerciseTargets.filter(t=>t!=='All').map(t => <option key={t}>{t}</option>)}</select></div>
+                  <div><label className="text-xs font-bold text-slate-500 mb-1 block">EQUIPMENT</label><input type="text" value={newExercise.equipment} onChange={(e)=>setNewExercise({...newExercise, equipment: e.target.value})} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm" placeholder="e.g. Barbell" /></div>
+                </div>
+                <button onClick={saveExercise} className="w-full bg-cyan-500 text-slate-950 py-3 rounded-xl font-bold shadow-lg hover:bg-cyan-400 transition-colors text-sm sm:text-base">{editingExerciseId ? 'UPDATE EXERCISE' : 'SAVE EXERCISE'}</button>
               </div>
-              <div className="bg-slate-900 p-1 rounded-3xl border border-slate-800 shadow-xl overflow-hidden transition-all">
-                <button onClick={() => { if (showAddExercise) { setShowAddExercise(false); setEditingExerciseId(null); setNewExercise({ name: '', target: 'Legs & Glutes', equipment: 'Dumbbell' }); } else { setShowAddExercise(true); } }} className="w-full p-4 flex items-center justify-between text-cyan-400 font-bold hover:bg-slate-800/50 transition-colors rounded-2xl text-sm sm:text-base">
-                  <span className="flex items-center gap-2"><Plus size={20}/> {editingExerciseId ? 'Edit Exercise' : 'Add Custom Exercise'}</span><ChevronRight className={`transition-transform duration-300 ${showAddExercise ? 'rotate-90' : ''}`} />
-                </button>
-                {showAddExercise && (
-                  <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                      <div><label className="text-xs font-bold text-slate-500 mb-1 block">EXERCISE NAME</label><input type="text" value={newExercise.name} onChange={(e)=>setNewExercise({...newExercise, name: e.target.value})} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm" placeholder="e.g. Hip Thrusts" /></div>
-                      <div><label className="text-xs font-bold text-slate-500 mb-1 block">TARGET MUSCLE</label><select value={newExercise.target} onChange={(e)=>setNewExercise({...newExercise, target: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm">{exerciseTargets.filter(t=>t!=='All').map(t => <option key={t}>{t}</option>)}</select></div>
-                      <div><label className="text-xs font-bold text-slate-500 mb-1 block">EQUIPMENT</label><input type="text" value={newExercise.equipment} onChange={(e)=>setNewExercise({...newExercise, equipment: e.target.value})} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-500 text-sm" placeholder="e.g. Barbell" /></div>
-                    </div>
-                    <button onClick={saveExercise} className="w-full bg-cyan-500 text-slate-950 py-3 rounded-xl font-bold shadow-lg hover:bg-cyan-400 transition-colors text-sm sm:text-base">{editingExerciseId ? 'UPDATE EXERCISE' : 'SAVE EXERCISE'}</button>
-                  </div>
+            );
+
+            return (
+              <div className="animate-in fade-in duration-500 space-y-6">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
+                  {exerciseTargets.map(cat => (
+                    <button key={cat} onClick={() => setActiveExerciseFilter(cat)} className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeExerciseFilter === cat ? 'bg-cyan-500 text-white shadow-lg' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>{cat}</button>
+                  ))}
+                </div>
+
+                {!showAddExercise && !editingExerciseId && (
+                  <button onClick={() => { setShowAddExercise(true); setEditingExerciseId(null); setNewExercise({ name: '', target: 'Legs & Glutes', equipment: 'Dumbbell' }); }} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-cyan-400 text-cyan-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Add Custom Exercise</button>
                 )}
+
+                {showAddExercise && !editingExerciseId && exerciseBuilderNode}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 mt-6">
+                  {filteredExercises.map((item) => {
+                    if (editingExerciseId === item.id) {
+                      return <div key={item.id} className="col-span-1 sm:col-span-2">{exerciseBuilderNode}</div>;
+                    }
+                    return (
+                      <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-3xl flex flex-col justify-between group hover:border-cyan-500/50 cursor-pointer transition-colors overflow-hidden" onClick={() => editExercise(item)}>
+                        <div className="p-5 flex justify-between items-start group-hover:bg-slate-800/30 transition-colors">
+                          <div className="min-w-0 pr-2"><h4 className="font-bold text-white text-base sm:text-lg leading-tight truncate group-hover:text-cyan-400 transition-colors">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate mt-1">Equipment: {item.equipment}</p></div>
+                          <Edit3 size={18} className="text-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
+                        </div>
+                        <div className="px-5 pb-4 group-hover:bg-slate-800/30 transition-colors">
+                          <span className={`text-[9px] sm:text-[10px] font-bold px-2 py-1 rounded-md border inline-block ${getTargetColor(item.target)}`}>{item.target}</span>
+                        </div>
+                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => deleteExercise(item.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-[10px] font-bold transition-colors px-2 py-1"><Trash2 size={14} /> Delete</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4">
-                {filteredExercises.map((item) => (
-                  <div key={item.id} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between group hover:border-cyan-500/50 transition-colors relative">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="min-w-0 pr-2"><h4 className="font-bold text-white text-base sm:text-lg leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-500 font-medium truncate">Equipment: {item.equipment}</p></div>
-                      <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editExercise(item)} className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={16}/></button><button onClick={() => deleteExercise(item.id)} className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={16}/></button></div>
-                    </div>
-                    <div><span className={`text-[9px] sm:text-[10px] font-bold px-2 py-1 rounded-md border ${getTargetColor(item.target)}`}>{item.target}</span></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* === PROFILE HUB (Macros) === */}
           {mainTab === 'profile' && subTabs.profile === 'macros' && (
