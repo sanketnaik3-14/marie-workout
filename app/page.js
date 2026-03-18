@@ -517,6 +517,7 @@ export default function GirlfriendFitnessApp() {
 
   const editMyMeal = (myMeal) => {
     setDraftMyMealName(myMeal.name); setDraftMyMealInstructions(myMeal.instructions || ''); setDraftMyMealItems(myMeal.items); setEditingMyMealId(myMeal.id); setIsCreatingMyMeal(true);
+    setMyMealSearchQuery(''); setInlineAddFoodMode(false);
   };
 
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
@@ -531,7 +532,7 @@ export default function GirlfriendFitnessApp() {
   const filteredPlanSearchDb = [...myMeals, ...ingredients].filter(ing => ing.name.toLowerCase().includes(planSearchQuery.toLowerCase()));
 
   useEffect(() => {
-    if (isCreatingTemplate && !editingTemplateId && draftMeals.length === 0) setDraftMeals(Array.from({ length: draftMealCount }, (_, i) => ({ id: `dm${i+1}`, name: `Meal ${i+1}`, items: [] })));
+    if (isCreatingTemplate && !editingTemplateId && draftMeals.length === 0) setDraftMeals(Array.from({ length: draftMealCount }, (_, i) => ({ id: `dm${i + 1}`, name: `Meal ${i + 1}`, items: [] })));
   }, [isCreatingTemplate, draftMealCount, editingTemplateId]);
 
   const handleMealCountChange = (num) => {
@@ -584,7 +585,7 @@ export default function GirlfriendFitnessApp() {
       if (!isMock) await setDoc(getDocRef('mealTemplates', newTemplate.id), newTemplate);
       else editingTemplateId ? setMealTemplates(mealTemplates.map(t => t.id === editingTemplateId ? newTemplate : t)) : setMealTemplates([...mealTemplates, newTemplate]);
       
-      setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); setPlanSearchQuery(''); setInlinePlanAddFoodMode(false); showNotification(`Template saved!`);
+      setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); setPlanSearchQuery(''); setInlinePlanAddFoodMode(false); setActiveAddingMealId(null); showNotification(`Template saved!`);
     } catch (err) {
       console.error(err);
       showNotification("Error saving template.");
@@ -593,6 +594,7 @@ export default function GirlfriendFitnessApp() {
 
   const editTemplate = (template) => {
     setDraftTemplateName(template.name); setDraftMealCount(template.mealCount); setDraftMeals(template.meals); setEditingTemplateId(template.id); setIsCreatingTemplate(true);
+    setPlanSearchQuery(''); setInlinePlanAddFoodMode(false); setActiveAddingMealId(null);
   };
 
   const deleteTemplate = async (id) => {
@@ -625,7 +627,7 @@ export default function GirlfriendFitnessApp() {
 
   const saveExercise = async () => {
     try {
-      if (!newExercise.name) return showNotification("Please enter an exercise name.");
+      if (!newExercise.name) { showNotification("Please enter an exercise name."); return null; }
       const addedItem = { id: editingExerciseId || `e${Date.now()}`, ...newExercise };
       
       if (!isMock) await setDoc(getDocRef('exercises', addedItem.id), addedItem);
@@ -633,9 +635,11 @@ export default function GirlfriendFitnessApp() {
   
       setNewExercise({ name: '', target: 'Legs & Glutes', equipment: 'Dumbbell' });
       setShowAddExercise(false); setEditingExerciseId(null); setInlineAddExerciseMode(false); showNotification(`${addedItem.name} saved!`);
+      return addedItem;
     } catch (err) {
       console.error(err);
       showNotification("Error saving exercise.");
+      return null;
     }
   };
 
@@ -683,7 +687,7 @@ export default function GirlfriendFitnessApp() {
       if (!isMock) await setDoc(getDocRef('workoutTemplates', newRoutine.id), newRoutine);
       else editingRoutineId ? setWorkoutTemplates(workoutTemplates.map(t => t.id === editingRoutineId ? newRoutine : t)) : setWorkoutTemplates([...workoutTemplates, newRoutine]);
       
-      setIsCreatingRoutine(false); setEditingRoutineId(null); setDraftRoutineName(''); setDraftRoutineExercises([]); setDraftRoutineIsRest(false);
+      setIsCreatingRoutine(false); setEditingRoutineId(null); setDraftRoutineName(''); setDraftRoutineExercises([]); setDraftRoutineIsRest(false); setInlineAddExerciseMode(false); setAddingRoutineExercise(false);
       showNotification(`Routine saved!`);
     } catch (err) {
       console.error(err);
@@ -693,7 +697,7 @@ export default function GirlfriendFitnessApp() {
 
   const editRoutine = (routine) => {
     setDraftRoutineName(routine.title); setDraftRoutineIsRest(routine.isRest); setDraftRoutineExercises(routine.exercises);
-    setEditingRoutineId(routine.id); setIsCreatingRoutine(true);
+    setEditingRoutineId(routine.id); setIsCreatingRoutine(true); setInlineAddExerciseMode(false); setAddingRoutineExercise(false);
   };
 
   const deleteRoutine = async (id) => {
@@ -847,6 +851,8 @@ export default function GirlfriendFitnessApp() {
 
   const handleDaySelect = (day) => {
     setSelectedDay(day);
+    setWorkoutInputs({});
+    setActiveExtraAdd(false);
   };
 
   // Dynamic Workout Selection
@@ -1091,10 +1097,10 @@ export default function GirlfriendFitnessApp() {
                           {isOver ? (diff === 0 ? `Target hit exactly!` : `You are ${diff} kcal over target.`) : `${diff} kcal remaining for today.`}
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-center">
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${mainBg}`} style={{ width: `${Math.min(100, (consumed.calories / calcResults.calories) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1 uppercase">{isOver ? 'Over Target' : 'Remaining Kcal'}</p><p className={`text-xl sm:text-2xl font-black ${mainColor}`}>{diff}</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.calories}</p></div>
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.protein / calcResults.protein) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING PRO</p><p className="text-xl sm:text-2xl font-black text-rose-400">{Math.round(calcResults.protein - consumed.protein)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.protein}g</p></div>
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.carbs / calcResults.carbs) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING CARB</p><p className="text-xl sm:text-2xl font-black text-cyan-400">{Math.round(calcResults.carbs - consumed.carbs)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.carbs}g</p></div>
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.fat / calcResults.fat) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING FAT</p><p className="text-xl sm:text-2xl font-black text-yellow-400">{Math.round(calcResults.fat - consumed.fat)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.fat}g</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${mainBg}`} style={{ width: `${Math.min(100, (consumed.calories / calcResults.calories) * 100)}%` }}></div><p className={`text-[9px] sm:text-[10px] font-bold mb-1 uppercase ${isOver ? 'text-indigo-400' : 'text-slate-400'}`}>{isOver ? 'Over Target' : 'Remaining Kcal'}</p><p className={`text-xl sm:text-2xl font-black ${mainColor}`}>{diff}</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.calories}</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.protein / calcResults.protein) * 100)}%` }}></div><p className={`text-[9px] sm:text-[10px] font-bold mb-1 uppercase ${consumed.protein > calcResults.protein ? 'text-rose-500' : 'text-slate-400'}`}>{consumed.protein > calcResults.protein ? 'OVER PRO' : 'REMAINING PRO'}</p><p className="text-xl sm:text-2xl font-black text-rose-400">{Math.abs(Math.round(calcResults.protein - consumed.protein))}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.protein}g</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.carbs / calcResults.carbs) * 100)}%` }}></div><p className={`text-[9px] sm:text-[10px] font-bold mb-1 uppercase ${consumed.carbs > calcResults.carbs ? 'text-cyan-500' : 'text-slate-400'}`}>{consumed.carbs > calcResults.carbs ? 'OVER CARB' : 'REMAINING CARB'}</p><p className="text-xl sm:text-2xl font-black text-cyan-400">{Math.abs(Math.round(calcResults.carbs - consumed.carbs))}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.carbs}g</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.fat / calcResults.fat) * 100)}%` }}></div><p className={`text-[9px] sm:text-[10px] font-bold mb-1 uppercase ${consumed.fat > calcResults.fat ? 'text-yellow-500' : 'text-slate-400'}`}>{consumed.fat > calcResults.fat ? 'OVER FAT' : 'REMAINING FAT'}</p><p className="text-xl sm:text-2xl font-black text-yellow-400">{Math.abs(Math.round(calcResults.fat - consumed.fat))}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.fat}g</p></div>
                         </div>
                       </div>
                     );
@@ -1145,7 +1151,7 @@ export default function GirlfriendFitnessApp() {
                       </div>
                     )}
                     {activeExtras.length === 0 ? (
-                      <p className="text-[10px] sm:text-xs text-slate-500 italic text-center p-4">You haven't deviated from the plan.</p>
+                      <p className="text-[10px] sm:text-xs text-slate-500 italic text-center p-4">{todaysPlan ? "You haven't deviated from the plan." : "No extra food logged yet."}</p>
                     ) : (
                       <div className="space-y-2">
                         {activeExtras.map(ext => (
@@ -1248,7 +1254,7 @@ export default function GirlfriendFitnessApp() {
                 </>
               ) : (
                 <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
-                  <button onClick={() => { setIsCreatingRoutine(false); setEditingRoutineId(null); setDraftRoutineName(''); setDraftRoutineExercises([]); setDraftRoutineIsRest(false); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
+                  <button onClick={() => { setIsCreatingRoutine(false); setEditingRoutineId(null); setDraftRoutineName(''); setDraftRoutineExercises([]); setDraftRoutineIsRest(false); setInlineAddExerciseMode(false); setAddingRoutineExercise(false); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
                   <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingRoutineId ? 'Edit Routine' : 'Routine Builder'}</h3>
                   <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex-1"><label className="text-xs font-bold text-slate-500 mb-1 block">ROUTINE NAME</label><input type="text" value={draftRoutineName} onChange={(e)=>setDraftRoutineName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-cyan-500 text-sm sm:text-base" /></div>
@@ -1287,7 +1293,7 @@ export default function GirlfriendFitnessApp() {
                               <div><select value={newExercise.target} onChange={(e)=>setNewExercise({...newExercise, target: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs">{exerciseTargets.filter(t=>t!=='All').map(t => <option key={t}>{t}</option>)}</select></div>
                               <div><input type="text" value={newExercise.equipment} onChange={(e)=>setNewExercise({...newExercise, equipment: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs" placeholder="Equipment" /></div>
                             </div>
-                            <button onClick={saveExercise} className="w-full bg-cyan-500 text-slate-950 py-2 rounded-lg font-bold text-xs shadow-lg">SAVE TO LIBRARY</button>
+                            <button onClick={async () => { const ex = await saveExercise(); if (ex) addExerciseToRoutine(ex); }} className="w-full bg-cyan-500 text-slate-950 py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-cyan-400 transition-colors">SAVE & ADD TO ROUTINE</button>
                           </div>
                         )}
                         {addingRoutineExercise && (
@@ -1441,7 +1447,7 @@ export default function GirlfriendFitnessApp() {
                 </>
               ) : (
                 <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
-                  <button onClick={() => { setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); setPlanSearchQuery(''); setInlinePlanAddFoodMode(false); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
+                  <button onClick={() => { setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); setPlanSearchQuery(''); setInlinePlanAddFoodMode(false); setActiveAddingMealId(null); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
                   <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingTemplateId ? 'Edit Template' : 'Template Builder'}</h3>
                   
                   {calcResults && (
