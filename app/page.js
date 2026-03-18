@@ -140,11 +140,21 @@ export default function GirlfriendFitnessApp() {
     
     if (neck && waist && hip) {
        const hInches = h / 2.54;
-       // Female Navy Body Fat Formula (requires inches)
-       bf = (163.205 * Math.log10(parseFloat(waist) + parseFloat(hip) - parseFloat(neck))) - (97.684 * Math.log10(hInches)) - 78.387;
-       const lbm = w * (1 - bf / 100);
-       bmr = 370 + (21.6 * lbm);
-       method = "Katch-McArdle";
+       const waistVal = parseFloat(waist);
+       const hipVal = parseFloat(hip);
+       const neckVal = parseFloat(neck);
+       const logVal = waistVal + hipVal - neckVal;
+       
+       if (logVal > 0 && hInches > 0) {
+           // Female Navy Body Fat Formula (requires inches)
+           bf = (163.205 * Math.log10(logVal)) - (97.684 * Math.log10(hInches)) - 78.387;
+           const lbm = w * (1 - bf / 100);
+           bmr = 370 + (21.6 * lbm);
+           method = "Katch-McArdle";
+       } else {
+           bmr = (10 * w) + (6.25 * h) - (5 * a) - 161; 
+           method = "Mifflin-St Jeor";
+       }
     } else {
        bmr = (10 * w) + (6.25 * h) - (5 * a) - 161; 
        method = "Mifflin-St Jeor";
@@ -723,7 +733,8 @@ export default function GirlfriendFitnessApp() {
     }
   };
 
-  const groupedHistory = mockWorkoutHistory.reduce((acc, log) => {
+  const sortedWorkoutHistory = [...mockWorkoutHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const groupedHistory = sortedWorkoutHistory.reduce((acc, log) => {
     if (!acc[log.date]) acc[log.date] = { day: log.day, exercises: [] };
     acc[log.date].exercises.push(log);
     return acc;
@@ -773,15 +784,15 @@ export default function GirlfriendFitnessApp() {
   const selectedWorkout = workoutTemplates.find(t => t.id === activeRoutineId) || { title: "No Workout Assigned", isRest: true, exercises: [] };
 
   const [workoutInputs, setWorkoutInputs] = useState({});
-  const handleWorkoutInput = (exerciseName, setIndex, field, value) => {
+  const handleWorkoutInput = (exerciseKey, setIndex, field, value) => {
     const newInputs = { ...workoutInputs };
-    if (!newInputs[exerciseName]) newInputs[exerciseName] = [];
-    else newInputs[exerciseName] = [...newInputs[exerciseName]];
+    if (!newInputs[exerciseKey]) newInputs[exerciseKey] = [];
+    else newInputs[exerciseKey] = [...newInputs[exerciseKey]];
     
-    if (!newInputs[exerciseName][setIndex]) newInputs[exerciseName][setIndex] = { weight: '', reps: '' };
-    else newInputs[exerciseName][setIndex] = { ...newInputs[exerciseName][setIndex] };
+    if (!newInputs[exerciseKey][setIndex]) newInputs[exerciseKey][setIndex] = { weight: '', reps: '' };
+    else newInputs[exerciseKey][setIndex] = { ...newInputs[exerciseKey][setIndex] };
     
-    newInputs[exerciseName][setIndex][field] = value;
+    newInputs[exerciseKey][setIndex][field] = value;
     setWorkoutInputs(newInputs);
   };
 
@@ -791,13 +802,14 @@ export default function GirlfriendFitnessApp() {
       const dateStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
       let loggedSomething = false;
       
-      for (const exercise of selectedWorkout.exercises) {
-        const sets = workoutInputs[exercise.name];
+      for (let idx = 0; idx < selectedWorkout.exercises.length; idx++) {
+        const exercise = selectedWorkout.exercises[idx];
+        const sets = workoutInputs[`${exercise.name}-${idx}`];
         if (sets && sets.length > 0) {
           const validSets = sets.filter(s => s && (s.weight || s.reps));
           if (validSets.length > 0) {
              const logItem = {
-               id: `${dateStr}-${exercise.name.replace(/\s+/g, '')}`,
+               id: `${dateStr}-${exercise.name.replace(/\s+/g, '')}-${Date.now()}-${idx}`,
                date: dateStr, day: selectedDay, exercise: exercise.name,
                sets: validSets.map((s, i) => ({ set: i+1, weight: Number(s.weight) || 0, reps: Number(s.reps) || 0 }))
              };
@@ -1006,10 +1018,10 @@ export default function GirlfriendFitnessApp() {
                     return (
                       <div className="mb-8">
                         <div className={`p-3 sm:p-4 rounded-2xl mb-4 text-center font-bold text-xs sm:text-sm ${isOver ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-slate-800 text-slate-400'}`}>
-                          {isOver ? `Goal Reached! +${diff} kcal buffer.` : `${diff} kcal remaining for today.`}
+                          {isOver ? (diff === 0 ? `Target hit exactly!` : `You are ${diff} kcal over target.`) : `${diff} kcal remaining for today.`}
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-center">
-                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${mainBg}`} style={{ width: `${Math.min(100, (consumed.calories / calcResults.calories) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING KCAL</p><p className={`text-xl sm:text-2xl font-black ${mainColor}`}>{Math.round(calcResults.calories - consumed.calories)}</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.calories}</p></div>
+                          <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${mainBg}`} style={{ width: `${Math.min(100, (consumed.calories / calcResults.calories) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1 uppercase">{isOver ? 'Over Target' : 'Remaining Kcal'}</p><p className={`text-xl sm:text-2xl font-black ${mainColor}`}>{diff}</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.calories}</p></div>
                           <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.protein / calcResults.protein) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING PRO</p><p className="text-xl sm:text-2xl font-black text-rose-400">{Math.round(calcResults.protein - consumed.protein)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.protein}g</p></div>
                           <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.carbs / calcResults.carbs) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING CARB</p><p className="text-xl sm:text-2xl font-black text-cyan-400">{Math.round(calcResults.carbs - consumed.carbs)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.carbs}g</p></div>
                           <div className="bg-slate-800/50 rounded-2xl p-3 sm:p-4 border border-slate-700 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500" style={{ width: `${Math.min(100, (consumed.fat / calcResults.fat) * 100)}%` }}></div><p className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">REMAINING FAT</p><p className="text-xl sm:text-2xl font-black text-yellow-400">{Math.round(calcResults.fat - consumed.fat)}g</p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">Goal: {calcResults.fat}g</p></div>
@@ -1042,7 +1054,7 @@ export default function GirlfriendFitnessApp() {
                             <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2">
                               <p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p>
                               <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                                <input type="number" placeholder={ing.baseQuantity} id={`extra-${ing.id}`} className="w-12 sm:w-14 bg-slate-800 text-white font-bold p-1 rounded-md text-center text-[10px] sm:text-xs focus:outline-none" />
+                                <input type="number" inputMode="decimal" placeholder={ing.baseQuantity} id={`extra-${ing.id}`} className="w-12 sm:w-14 bg-slate-800 text-white font-bold p-1 rounded-md text-center text-[10px] sm:text-xs focus:outline-none" />
                                 <span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span>
                                 <button onClick={() => { const el = document.getElementById(`extra-${ing.id}`); const val = el?.value || ing.baseQuantity; addExtraToToday(ing, val); if (el) el.value = ''; }} className="bg-emerald-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-emerald-600 transition-colors"><Plus size={12} /></button>
                               </div>
@@ -1087,13 +1099,14 @@ export default function GirlfriendFitnessApp() {
                         </div>
                         <div className="space-y-3">
                           {Array.from({ length: ex.sets }).map((_, setIdx) => {
-                            const cVal = (workoutInputs[ex.name] && workoutInputs[ex.name][setIdx]) || {weight: '', reps: ''};
+                            const exerciseKey = `${ex.name}-${idx}`;
+                            const cVal = (workoutInputs[exerciseKey] && workoutInputs[exerciseKey][setIdx]) || {weight: '', reps: ''};
                             return (
                               <div key={setIdx} className="flex items-center justify-between gap-2 sm:gap-4">
                                 <span className="text-xs sm:text-sm font-bold text-slate-400 w-10 sm:w-12">Set {setIdx + 1}</span>
                                 <div className="flex gap-2 sm:gap-3 flex-1 justify-end">
-                                <div className="relative w-20 sm:w-32"><input type="number" inputMode="decimal" placeholder="kg" value={cVal.weight} onChange={(e) => handleWorkoutInput(ex.name, setIdx, 'weight', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 sm:p-2.5 font-black text-white text-center focus:outline-none focus:border-cyan-500 transition-colors text-sm sm:text-base" /></div>
-                                <div className="relative w-20 sm:w-32"><input type="number" inputMode="numeric" placeholder="reps" value={cVal.reps} onChange={(e) => handleWorkoutInput(ex.name, setIdx, 'reps', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 sm:p-2.5 font-black text-white text-center focus:outline-none focus:border-cyan-500 transition-colors text-sm sm:text-base" /></div>
+                                <div className="relative w-20 sm:w-32"><input type="number" inputMode="decimal" placeholder="kg" value={cVal.weight} onChange={(e) => handleWorkoutInput(exerciseKey, setIdx, 'weight', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 sm:p-2.5 font-black text-white text-center focus:outline-none focus:border-cyan-500 transition-colors text-sm sm:text-base" /></div>
+                                <div className="relative w-20 sm:w-32"><input type="number" inputMode="numeric" placeholder="reps" value={cVal.reps} onChange={(e) => handleWorkoutInput(exerciseKey, setIdx, 'reps', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 sm:p-2.5 font-black text-white text-center focus:outline-none focus:border-cyan-500 transition-colors text-sm sm:text-base" /></div>
                                 </div>
                               </div>
                             );
@@ -1169,8 +1182,8 @@ export default function GirlfriendFitnessApp() {
                             <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 gap-4">
                               <span className="font-bold text-sm text-white flex-1">{ex.name}</span>
                               <div className="flex items-center gap-3 self-end sm:self-auto">
-                                <div className="relative"><label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">SETS</label><input type="number" value={ex.sets} onChange={(e)=>updateRoutineExercise(idx, 'sets', e.target.value)} className="w-14 sm:w-16 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" /></div>
-                                <div className="relative"><label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">REST (s)</label><input type="number" value={ex.rest} onChange={(e)=>updateRoutineExercise(idx, 'rest', e.target.value)} className="w-14 sm:w-16 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" /></div>
+                                <div className="relative"><label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">SETS</label><input type="number" inputMode="numeric" value={ex.sets} onChange={(e)=>updateRoutineExercise(idx, 'sets', e.target.value)} className="w-14 sm:w-16 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" /></div>
+                                <div className="relative"><label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">REST (s)</label><input type="number" inputMode="numeric" value={ex.rest} onChange={(e)=>updateRoutineExercise(idx, 'rest', e.target.value)} className="w-14 sm:w-16 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" /></div>
                                 <button onClick={() => setDraftRoutineExercises(draftRoutineExercises.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400 p-2"><Trash2 size={16}/></button>
                               </div>
                             </div>
@@ -1364,7 +1377,7 @@ export default function GirlfriendFitnessApp() {
                             <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><Search size={14}/> Search Database</h4>
                             <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
                               {[...recipes, ...ingredients].map(ing => (
-                                <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1 sm:gap-2 truncate">{ing.items ? <ChefHat size={10} className="text-yellow-400 shrink-0"/> : <Apple size={10} className="text-orange-400 shrink-0"/>} <span className="truncate">{ing.name}</span></p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" placeholder={ing.baseQuantity} id={`qty-${meal.id}-${ing.id}`} className="w-10 sm:w-14 bg-slate-800 text-white font-bold p-1 sm:p-1.5 rounded-md text-center text-[10px] sm:text-xs focus:outline-none focus:ring-1 ring-purple-500" /><span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span><button onClick={() => { const val = document.getElementById(`qty-${meal.id}-${ing.id}`).value || ing.baseQuantity; addItemToDraftMeal(ing, val); document.getElementById(`qty-${meal.id}-${ing.id}`).value = ''; }} className="bg-purple-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-purple-600 transition-colors"><Plus size={12} /></button></div></div>
+                                <div key={ing.id} className="flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1 sm:gap-2 truncate">{ing.items ? <ChefHat size={10} className="text-yellow-400 shrink-0"/> : <Apple size={10} className="text-orange-400 shrink-0"/>} <span className="truncate">{ing.name}</span></p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" inputMode="decimal" placeholder={ing.baseQuantity} id={`qty-${meal.id}-${ing.id}`} className="w-10 sm:w-14 bg-slate-800 text-white font-bold p-1 sm:p-1.5 rounded-md text-center text-[10px] sm:text-xs focus:outline-none focus:ring-1 ring-purple-500" /><span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span><button onClick={() => { const val = document.getElementById(`qty-${meal.id}-${ing.id}`).value || ing.baseQuantity; addItemToDraftMeal(ing, val); document.getElementById(`qty-${meal.id}-${ing.id}`).value = ''; }} className="bg-purple-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-purple-600 transition-colors"><Plus size={12} /></button></div></div>
                               ))}
                             </div>
                           </div>
@@ -1409,7 +1422,7 @@ export default function GirlfriendFitnessApp() {
                     <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2"><Search size={14}/> Search Database</h4>
                     <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
                       {ingredients.map(ing => (
-                        <div key={ing.id} className="flex justify-between items-center bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" placeholder={ing.baseQuantity} id={`rec-qty-${ing.id}`} className="w-10 sm:w-16 bg-slate-800 text-white font-bold p-1 sm:p-2 rounded-lg text-center text-[10px] sm:text-sm focus:outline-none focus:ring-1 ring-yellow-500" /><button onClick={() => { const val = document.getElementById(`rec-qty-${ing.id}`).value || ing.baseQuantity; addIngredientToRecipe(ing, val); document.getElementById(`rec-qty-${ing.id}`).value = ''; }} className="bg-slate-800 p-1 sm:p-2 rounded-lg text-slate-400 hover:bg-yellow-500 hover:text-white transition-colors"><Plus size={14} /></button></div></div>
+                        <div key={ing.id} className="flex justify-between items-center bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 gap-2"><div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p></div><div className="flex items-center gap-1 sm:gap-2 shrink-0"><input type="number" inputMode="decimal" placeholder={ing.baseQuantity} id={`rec-qty-${ing.id}`} className="w-10 sm:w-16 bg-slate-800 text-white font-bold p-1 sm:p-2 rounded-lg text-center text-[10px] sm:text-sm focus:outline-none focus:ring-1 ring-yellow-500" /><button onClick={() => { const val = document.getElementById(`rec-qty-${ing.id}`).value || ing.baseQuantity; addIngredientToRecipe(ing, val); document.getElementById(`rec-qty-${ing.id}`).value = ''; }} className="bg-slate-800 p-1 sm:p-2 rounded-lg text-slate-400 hover:bg-yellow-500 hover:text-white transition-colors"><Plus size={14} /></button></div></div>
                       ))}
                     </div>
                   </div>
@@ -1439,13 +1452,13 @@ export default function GirlfriendFitnessApp() {
                       <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">CATEGORY</label><select value={newIngredient.category} onChange={(e)=>setNewIngredient({...newIngredient, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm"><option>Proteins</option><option>Carbs</option><option>Fats</option><option>Spices</option><option>Sauces</option></select></div>
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
-                      <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">BASE QUANTITY</label><input type="number" value={newIngredient.baseQuantity} onChange={(e)=>setNewIngredient({...newIngredient, baseQuantity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm" placeholder="100" /></div>
+                      <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">BASE QUANTITY</label><input type="number" inputMode="decimal" value={newIngredient.baseQuantity} onChange={(e)=>setNewIngredient({...newIngredient, baseQuantity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm" placeholder="100" /></div>
                       <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">UNIT</label><input type="text" value={newIngredient.unit} onChange={(e)=>setNewIngredient({...newIngredient, unit: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm" placeholder="g, ml, cup" /></div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-                      <div><label className="text-[9px] sm:text-[10px] font-bold text-rose-400 mb-1 block">PRO (g)</label><input type="number" value={newIngredient.protein} onChange={(e)=>setNewIngredient({...newIngredient, protein: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-rose-500 text-center text-xs sm:text-sm" /></div>
-                      <div><label className="text-[9px] sm:text-[10px] font-bold text-cyan-400 mb-1 block">CARBS (g)</label><input type="number" value={newIngredient.carbs} onChange={(e)=>setNewIngredient({...newIngredient, carbs: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-cyan-500 text-center text-xs sm:text-sm" /></div>
-                      <div><label className="text-[9px] sm:text-[10px] font-bold text-yellow-400 mb-1 block">FAT (g)</label><input type="number" value={newIngredient.fat} onChange={(e)=>setNewIngredient({...newIngredient, fat: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-yellow-500 text-center text-xs sm:text-sm" /></div>
+                      <div><label className="text-[9px] sm:text-[10px] font-bold text-rose-400 mb-1 block">PRO (g)</label><input type="number" inputMode="decimal" value={newIngredient.protein} onChange={(e)=>setNewIngredient({...newIngredient, protein: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-rose-500 text-center text-xs sm:text-sm" /></div>
+                      <div><label className="text-[9px] sm:text-[10px] font-bold text-cyan-400 mb-1 block">CARBS (g)</label><input type="number" inputMode="decimal" value={newIngredient.carbs} onChange={(e)=>setNewIngredient({...newIngredient, carbs: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-cyan-500 text-center text-xs sm:text-sm" /></div>
+                      <div><label className="text-[9px] sm:text-[10px] font-bold text-yellow-400 mb-1 block">FAT (g)</label><input type="number" inputMode="decimal" value={newIngredient.fat} onChange={(e)=>setNewIngredient({...newIngredient, fat: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-yellow-500 text-center text-xs sm:text-sm" /></div>
                     </div>
                     <button onClick={saveIngredient} className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-orange-600 transition-colors text-xs sm:text-sm">{editingIngredientId ? 'UPDATE INGREDIENT' : 'SAVE INGREDIENT'}</button>
                   </div>
@@ -1526,7 +1539,9 @@ export default function GirlfriendFitnessApp() {
                     <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3"><Ruler size={24} className="text-emerald-400"/> Body Metrics</h2>
                     <div className="space-y-4">
                       {mockMeasurementHistory.length === 0 ? <p className="text-slate-500 italic text-center p-6 text-sm">No metrics logged yet.</p> : (
-                        mockMeasurementHistory.map((log) => (
+                        [...mockMeasurementHistory]
+                          .sort((a, b) => new Date(b.date) - new Date(a.date))
+                          .map((log) => (
                           <div key={log.id} className="bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-700 flex flex-col gap-3 sm:gap-4 justify-between items-start relative group">
                             <button onClick={() => deleteMeasurementLog(log.id)} className="absolute top-3 right-3 text-slate-500 hover:text-red-400 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity p-1"><Trash2 size={16} /></button>
                             <p className="text-[10px] sm:text-xs text-emerald-400 font-bold">{log.date}</p>
