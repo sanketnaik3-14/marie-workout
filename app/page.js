@@ -13,22 +13,29 @@ import {
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-
-// Safely initialize Firebase so it compiles correctly in all environments
-const safeEnv = typeof process !== 'undefined' ? process.env : {};
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 const firebaseConfig = {
-  apiKey: safeEnv.NEXT_PUBLIC_FIREBASE_API_KEY || "mock-key",
-  authDomain: safeEnv.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "mock-domain",
-  projectId: safeEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mock-project",
-  storageBucket: safeEnv.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "mock-bucket",
-  messagingSenderId: safeEnv.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "mock-sender",
-  appId: safeEnv.NEXT_PUBLIC_FIREBASE_APP_ID || "mock-app-id"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "mock-key",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "mock-domain",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mock-project",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "mock-bucket",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "mock-sender",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "mock-app-id"
 };
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Initialize App Check with reCAPTCHA v3 (only in the browser)
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
+    isTokenAutoRefreshEnabled: true
+  });
+}
+
 const isMock = firebaseConfig.apiKey === "mock-key"; 
 
 // ============================================================================
