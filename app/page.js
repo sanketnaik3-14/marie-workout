@@ -1215,17 +1215,91 @@ export default function GirlfriendFitnessApp() {
           )}
 
           {/* === WORKOUTS HUB (Routines) === */}
-          {mainTab === 'workouts' && subTabs.workouts === 'routines' && (
-            <div className="animate-in fade-in duration-500 space-y-6">
-              {!isCreatingRoutine ? (
-                <>
-                  <button onClick={() => setIsCreatingRoutine(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-cyan-400 text-cyan-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create New Routine</button>
-                  <div className="grid grid-cols-1 gap-4 mt-6">
-                    {workoutTemplates.map(routine => (
-                      <div key={routine.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col">
-                        <div className="p-5 sm:p-6 pb-4 relative">
+          {mainTab === 'workouts' && subTabs.workouts === 'routines' && (() => {
+            const routineBuilderNode = (
+              <div className="bg-slate-900 border border-cyan-500 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+                <button onClick={() => { setIsCreatingRoutine(false); setEditingRoutineId(null); setDraftRoutineName(''); setDraftRoutineExercises([]); setDraftRoutineIsRest(false); setInlineAddExerciseMode(false); setAddingRoutineExercise(false); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingRoutineId ? 'Edit Routine' : 'Routine Builder'}</h3>
+                <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex-1"><label className="text-xs font-bold text-slate-500 mb-1 block">ROUTINE NAME</label><input type="text" value={draftRoutineName} onChange={(e)=>setDraftRoutineName(e.target.value)} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-cyan-500 text-sm sm:text-base" /></div>
+                  <div className="flex items-center gap-3 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800 h-full"><input type="checkbox" id="isRestCheck" checked={draftRoutineIsRest} onChange={(e) => setDraftRoutineIsRest(e.target.checked)} className="w-5 h-5 accent-cyan-500" /><label htmlFor="isRestCheck" className="text-sm font-bold text-slate-300">Mark as Rest Day</label></div>
+                </div>
+                {!draftRoutineIsRest && (
+                  <>
+                    {draftRoutineExercises.length > 0 && (
+                      <div className="mb-6 space-y-3">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase">Exercises in Routine</h4>
+                        {draftRoutineExercises.map((ex, idx) => (
+                          <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 gap-4">
+                            <span className="font-bold text-sm text-white flex-1">{ex.name}</span>
+                            <div className="flex items-center gap-3 self-end sm:self-auto">
+                              <div className="relative"><label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">SETS</label><input type="number" inputMode="numeric" min={1} max={99} value={ex.sets} onChange={(e)=>updateRoutineExercise(idx, 'sets', e.target.value)} className="w-14 sm:w-16 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" /></div>
+                              <div className="relative"><label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">REST (s)</label><input type="number" inputMode="numeric" min={0} max={999} value={ex.rest} onChange={(e)=>updateRoutineExercise(idx, 'rest', e.target.value)} className="w-14 sm:w-20 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" /></div>
+                              <button onClick={() => setDraftRoutineExercises(draftRoutineExercises.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400 p-2"><Trash2 size={16}/></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="bg-slate-800/30 p-4 rounded-2xl border border-slate-700/50 mb-6 relative">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase flex items-center gap-1 sm:gap-2"><Search size={14}/> Add from Library</h4>
+                        <div className="flex gap-2">
+                          <button onClick={() => setInlineAddExerciseMode(!inlineAddExerciseMode)} className="text-cyan-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-cyan-500/10 px-2 py-1.5 rounded-lg"><Plus size={12}/> New</button>
+                          <button onClick={() => setAddingRoutineExercise(!addingRoutineExercise)} className="text-cyan-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-cyan-500/10 px-3 py-1.5 rounded-lg"><Search size={14}/> Browse</button>
+                        </div>
+                      </div>
+                      {inlineAddExerciseMode && (
+                        <div className="mt-4 p-4 border border-cyan-500/30 bg-slate-900 rounded-xl animate-in fade-in zoom-in-95 duration-200">
+                          <h5 className="text-[10px] font-bold text-cyan-400 uppercase mb-3">Create Quick Exercise</h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                            <div><input type="text" value={newExercise.name} onChange={(e)=>setNewExercise({...newExercise, name: e.target.value})} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs" placeholder="Name" /></div>
+                            <div><select value={newExercise.target} onChange={(e)=>setNewExercise({...newExercise, target: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs">{exerciseTargets.filter(t=>t!=='All').map(t => <option key={t}>{t}</option>)}</select></div>
+                            <div><input type="text" value={newExercise.equipment} onChange={(e)=>setNewExercise({...newExercise, equipment: e.target.value})} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs" placeholder="Equipment" /></div>
+                          </div>
+                          <button onClick={async () => { const ex = await saveExercise(); if (ex) addExerciseToRoutine(ex); }} className="w-full bg-cyan-500 text-slate-950 py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-cyan-400 transition-colors">SAVE & ADD TO ROUTINE</button>
+                        </div>
+                      )}
+                      {addingRoutineExercise && (
+                        <div className="mt-4 max-h-48 overflow-y-auto space-y-2 scrollbar-hide border-t border-slate-700/50 pt-4 animate-in fade-in zoom-in-95 duration-200">
+                          {exercises.map(ex => (
+                            <div key={ex.id} className="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-800">
+                              <div className="min-w-0 pr-2">
+                                <p className="text-xs sm:text-sm font-bold text-white truncate">{ex.name}</p>
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border mt-1 inline-block ${getTargetColor(ex.target)}`}>{ex.target}</span>
+                              </div>
+                              <button onClick={() => addExerciseToRoutine(ex)} className="bg-cyan-500/20 text-cyan-400 p-1.5 rounded-md hover:bg-cyan-500 hover:text-white transition-colors shrink-0"><Plus size={16} /></button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+                <button onClick={saveRoutine} className="w-full bg-cyan-500 text-slate-950 py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-cyan-400">SAVE ROUTINE</button>
+              </div>
+            );
+
+            return (
+              <div className="animate-in fade-in duration-500 space-y-6">
+                {!isCreatingRoutine && (
+                  <button onClick={() => { setIsCreatingRoutine(true); setEditingRoutineId(null); setDraftRoutineName(''); setDraftRoutineExercises([]); setDraftRoutineIsRest(false); setInlineAddExerciseMode(false); setAddingRoutineExercise(false); }} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-cyan-400 text-cyan-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create New Routine</button>
+                )}
+                <div className="grid grid-cols-1 gap-4 mt-6">
+                  {isCreatingRoutine && !editingRoutineId && routineBuilderNode}
+
+                  {workoutTemplates.map(routine => {
+                    if (isCreatingRoutine && editingRoutineId === routine.id) {
+                      return <React.Fragment key={routine.id}>{routineBuilderNode}</React.Fragment>;
+                    }
+                    return (
+                      <div key={routine.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col group cursor-pointer hover:border-cyan-500/50 transition-colors" onClick={() => editRoutine(routine)}>
+                        <div className="p-5 sm:p-6 pb-4 relative group-hover:bg-slate-800/30 transition-colors">
                           <div className="absolute top-0 right-0 p-4 opacity-5"><Dumbbell size={80} /></div>
-                          <h3 className="font-bold text-white text-xl mb-1 relative z-10">{routine.title}</h3>
+                          <div className="flex justify-between items-start mb-1 relative z-10">
+                            <h3 className="font-bold text-white text-xl group-hover:text-cyan-400 transition-colors">{routine.title}</h3>
+                            <Edit3 size={18} className="text-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
                           <p className="text-xs text-slate-400 mb-4 relative z-10">{routine.isRest ? "Rest Day" : `${routine.exercises.length} Exercises`}</p>
                           {!routine.isRest && (
                             <div className="space-y-2 relative z-10">
@@ -1235,13 +1309,10 @@ export default function GirlfriendFitnessApp() {
                             </div>
                           )}
                         </div>
-                        <div className="bg-slate-800/50 p-4 border-t border-slate-800 mt-auto relative z-10">
+                        <div className="bg-slate-800/50 p-4 border-t border-slate-800 mt-auto relative z-10" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-between items-center mb-3">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assign to Days</span>
-                            <div className="flex gap-2">
-                              <button onClick={() => editRoutine(routine)} className="text-slate-400 hover:text-white flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Edit3 size={14} /> Edit</button>
-                              <button onClick={() => deleteRoutine(routine.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Trash2 size={14} /> Delete</button>
-                            </div>
+                            <button onClick={() => deleteRoutine(routine.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Trash2 size={14} /> Delete</button>
                           </div>
                           <div className="flex gap-1 sm:gap-2">
                             {days.map(day => {
@@ -1255,74 +1326,12 @@ export default function GirlfriendFitnessApp() {
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
-                  <button onClick={() => { setIsCreatingRoutine(false); setEditingRoutineId(null); setDraftRoutineName(''); setDraftRoutineExercises([]); setDraftRoutineIsRest(false); setInlineAddExerciseMode(false); setAddingRoutineExercise(false); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
-                  <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingRoutineId ? 'Edit Routine' : 'Routine Builder'}</h3>
-                  <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex-1"><label className="text-xs font-bold text-slate-500 mb-1 block">ROUTINE NAME</label><input type="text" value={draftRoutineName} onChange={(e)=>setDraftRoutineName(e.target.value)} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-cyan-500 text-sm sm:text-base" /></div>
-                    <div className="flex items-center gap-3 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800 h-full"><input type="checkbox" id="isRestCheck" checked={draftRoutineIsRest} onChange={(e) => setDraftRoutineIsRest(e.target.checked)} className="w-5 h-5 accent-cyan-500" /><label htmlFor="isRestCheck" className="text-sm font-bold text-slate-300">Mark as Rest Day</label></div>
-                  </div>
-                  {!draftRoutineIsRest && (
-                    <>
-                      {draftRoutineExercises.length > 0 && (
-                        <div className="mb-6 space-y-3">
-                          <h4 className="text-xs font-bold text-slate-500 uppercase">Exercises in Routine</h4>
-                          {draftRoutineExercises.map((ex, idx) => (
-                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 gap-4">
-                              <span className="font-bold text-sm text-white flex-1">{ex.name}</span>
-                              <div className="flex items-center gap-3 self-end sm:self-auto">
-                                <div className="relative"><label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">SETS</label><input type="number" inputMode="numeric" min={1} max={99} value={ex.sets} onChange={(e)=>updateRoutineExercise(idx, 'sets', e.target.value)} className="w-14 sm:w-16 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" /></div>
-                                <div className="relative"><label className="absolute -top-2 left-2 bg-slate-800 px-1 text-[8px] font-bold text-slate-400 rounded">REST (s)</label><input type="number" inputMode="numeric" min={0} max={999} value={ex.rest} onChange={(e)=>updateRoutineExercise(idx, 'rest', e.target.value)} className="w-14 sm:w-20 bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-center focus:outline-none focus:border-cyan-500 text-sm" /></div>
-                                <button onClick={() => setDraftRoutineExercises(draftRoutineExercises.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400 p-2"><Trash2 size={16}/></button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="bg-slate-800/30 p-4 rounded-2xl border border-slate-700/50 mb-6 relative">
-                        <div className="flex justify-between items-center">
-                          <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase flex items-center gap-1 sm:gap-2"><Search size={14}/> Add from Library</h4>
-                          <div className="flex gap-2">
-                            <button onClick={() => setInlineAddExerciseMode(!inlineAddExerciseMode)} className="text-cyan-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-cyan-500/10 px-2 py-1.5 rounded-lg"><Plus size={12}/> New</button>
-                            <button onClick={() => setAddingRoutineExercise(!addingRoutineExercise)} className="text-cyan-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-cyan-500/10 px-3 py-1.5 rounded-lg"><Search size={14}/> Browse</button>
-                          </div>
-                        </div>
-                        {inlineAddExerciseMode && (
-                          <div className="mt-4 p-4 border border-cyan-500/30 bg-slate-900 rounded-xl animate-in fade-in zoom-in-95 duration-200">
-                            <h5 className="text-[10px] font-bold text-cyan-400 uppercase mb-3">Create Quick Exercise</h5>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                              <div><input type="text" value={newExercise.name} onChange={(e)=>setNewExercise({...newExercise, name: e.target.value})} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs" placeholder="Name" /></div>
-                              <div><select value={newExercise.target} onChange={(e)=>setNewExercise({...newExercise, target: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs">{exerciseTargets.filter(t=>t!=='All').map(t => <option key={t}>{t}</option>)}</select></div>
-                              <div><input type="text" value={newExercise.equipment} onChange={(e)=>setNewExercise({...newExercise, equipment: e.target.value})} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs" placeholder="Equipment" /></div>
-                            </div>
-                            <button onClick={async () => { const ex = await saveExercise(); if (ex) addExerciseToRoutine(ex); }} className="w-full bg-cyan-500 text-slate-950 py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-cyan-400 transition-colors">SAVE & ADD TO ROUTINE</button>
-                          </div>
-                        )}
-                        {addingRoutineExercise && (
-                          <div className="mt-4 max-h-48 overflow-y-auto space-y-2 scrollbar-hide border-t border-slate-700/50 pt-4 animate-in fade-in zoom-in-95 duration-200">
-                            {exercises.map(ex => (
-                              <div key={ex.id} className="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-800">
-                                <div className="min-w-0 pr-2">
-                                  <p className="text-xs sm:text-sm font-bold text-white truncate">{ex.name}</p>
-                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border mt-1 inline-block ${getTargetColor(ex.target)}`}>{ex.target}</span>
-                                </div>
-                                <button onClick={() => addExerciseToRoutine(ex)} className="bg-cyan-500/20 text-cyan-400 p-1.5 rounded-md hover:bg-cyan-500 hover:text-white transition-colors shrink-0"><Plus size={16} /></button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                  <button onClick={saveRoutine} className="w-full bg-cyan-500 text-slate-950 py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-cyan-400">SAVE ROUTINE</button>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           {/* === WORKOUTS HUB (Exercises) === */}
           {mainTab === 'workouts' && subTabs.workouts === 'exercises' && (
@@ -1411,30 +1420,174 @@ export default function GirlfriendFitnessApp() {
           )}
 
           {/* === NUTRITION HUB (Plans) === */}
-          {mainTab === 'nutrition' && subTabs.nutrition === 'plans' && (
-            <div className="animate-in fade-in duration-500 space-y-6">
-              {!isCreatingTemplate ? (
-                <>
-                  <button onClick={() => setIsCreatingTemplate(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-purple-400 text-purple-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create Sample Meal Day</button>
-                  <div className="grid grid-cols-1 gap-4 mt-6">
-                    {mealTemplates.map(template => (
-                      <div key={template.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col">
-                        <div className="p-5 sm:p-6 pb-4">
-                          <h3 className="font-bold text-white text-lg sm:text-xl mb-1">{template.name}</h3>
-                          <div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold mb-4 flex-wrap"><div className="text-amber-400">{template.totalCalories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div><div className="text-rose-400">{template.totalProtein}g <span className="text-[8px] sm:text-[10px] text-slate-500">PRO</span></div><div className="text-cyan-400">{template.totalCarbs}g <span className="text-[8px] sm:text-[10px] text-slate-500">CARB</span></div><div className="text-yellow-400">{template.totalFat}g <span className="text-[8px] sm:text-[10px] text-slate-500">FAT</span></div></div>
-                          <div className="space-y-2">
-                            {template.meals.map(meal => (
-                              <div key={meal.id} className="bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 text-xs sm:text-sm flex gap-2"><span className="font-bold text-slate-300 shrink-0">{meal.name}:</span><span className="text-slate-500 truncate">{meal.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ') || 'Empty'}</span></div>
+          {mainTab === 'nutrition' && subTabs.nutrition === 'plans' && (() => {
+            const templateBuilderNode = (
+              <div className="bg-slate-900 border border-purple-500 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+                <button onClick={() => { setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); setPlanSearchQuery(''); setInlinePlanAddFoodMode(false); setActiveAddingMealId(null); setExpandedDraftMealId(null); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingTemplateId ? 'Edit Template' : 'Template Builder'}</h3>
+                
+                {calcResults && (
+                  <div className="mb-6 bg-slate-950/50 p-4 rounded-2xl border border-slate-800 shadow-inner">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-center">
+                      <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${templateTotals.calories > calcResults.calories ? 'bg-indigo-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, (templateTotals.calories / calcResults.calories) * 100)}%` }}></div><p className={`text-[8px] sm:text-[9px] font-bold mb-1 ${templateTotals.calories > calcResults.calories ? 'text-indigo-400' : 'text-slate-400'}`}>TOTAL CALORIES</p><p className={`text-lg sm:text-xl font-black ${templateTotals.calories > calcResults.calories ? 'text-indigo-400' : 'text-amber-400'}`}>{Math.round(templateTotals.calories)} <span className="text-[10px] sm:text-xs text-slate-500 font-medium">/ {calcResults.calories}</span></p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">{templateTotals.calories > calcResults.calories ? `+${Math.round(templateTotals.calories - calcResults.calories)} OVER` : `${Math.round(calcResults.calories - templateTotals.calories)} REMAINING`}</p></div>
+                      <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-500" style={{ width: `${Math.min(100, (templateTotals.protein / calcResults.protein) * 100)}%` }}></div><p className={`text-[8px] sm:text-[9px] font-bold mb-1 ${templateTotals.protein > calcResults.protein ? 'text-rose-500' : 'text-slate-400'}`}>TOTAL PROTEIN</p><p className={`text-lg sm:text-xl font-black ${templateTotals.protein > calcResults.protein ? 'text-rose-500' : 'text-rose-400'}`}>{Math.round(templateTotals.protein)}g <span className="text-[10px] sm:text-xs text-slate-500 font-medium">/ {calcResults.protein}g</span></p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">{templateTotals.protein > calcResults.protein ? `+${Math.round(templateTotals.protein - calcResults.protein)}g OVER` : `${Math.round(calcResults.protein - templateTotals.protein)}g REMAINING`}</p></div>
+                      <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-500" style={{ width: `${Math.min(100, (templateTotals.carbs / calcResults.carbs) * 100)}%` }}></div><p className={`text-[8px] sm:text-[9px] font-bold mb-1 ${templateTotals.carbs > calcResults.carbs ? 'text-cyan-500' : 'text-slate-400'}`}>TOTAL CARBS</p><p className={`text-lg sm:text-xl font-black ${templateTotals.carbs > calcResults.carbs ? 'text-cyan-500' : 'text-cyan-400'}`}>{Math.round(templateTotals.carbs)}g <span className="text-[10px] sm:text-xs text-slate-500 font-medium">/ {calcResults.carbs}g</span></p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">{templateTotals.carbs > calcResults.carbs ? `+${Math.round(templateTotals.carbs - calcResults.carbs)}g OVER` : `${Math.round(calcResults.carbs - templateTotals.carbs)}g REMAINING`}</p></div>
+                      <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500" style={{ width: `${Math.min(100, (templateTotals.fat / calcResults.fat) * 100)}%` }}></div><p className={`text-[8px] sm:text-[9px] font-bold mb-1 ${templateTotals.fat > calcResults.fat ? 'text-yellow-500' : 'text-slate-400'}`}>TOTAL FAT</p><p className={`text-lg sm:text-xl font-black ${templateTotals.fat > calcResults.fat ? 'text-yellow-500' : 'text-yellow-400'}`}>{Math.round(templateTotals.fat)}g <span className="text-[10px] sm:text-xs text-slate-500 font-medium">/ {calcResults.fat}g</span></p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">{templateTotals.fat > calcResults.fat ? `+${Math.round(templateTotals.fat - calcResults.fat)}g OVER` : `${Math.round(calcResults.fat - templateTotals.fat)}g REMAINING`}</p></div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div><label className="text-xs font-bold text-slate-500 mb-1 block">TEMPLATE NAME</label><input type="text" placeholder="e.g. Cardio Day Meals" maxLength={50} value={draftTemplateName} onChange={(e)=>setDraftTemplateName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-purple-500 text-sm sm:text-base" /></div>
+                  <div><label className="text-xs font-bold text-slate-500 mb-1 block">NUMBER OF MEALS</label><select value={draftMealCount} onChange={(e)=>handleMealCountChange(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-purple-500 text-sm sm:text-base">{[1,2,3,4,5,6].map(num => <option key={num} value={num}>{num} Meals</option>)}</select></div>
+                </div>
+                <div className="space-y-4 mb-6">
+                  {draftMeals.map((meal) => {
+                    const mCals = Math.round(meal.items.reduce((s, i) => s + i.calories, 0));
+                    const mPro = Math.round(meal.items.reduce((s, i) => s + i.protein, 0));
+                    const mCarbs = Math.round(meal.items.reduce((s, i) => s + i.carbs, 0));
+                    const mFat = Math.round(meal.items.reduce((s, i) => s + i.fat, 0));
+                    const isExpanded = expandedDraftMealId === meal.id;
+                    return (
+                    <div key={meal.id} className={`bg-slate-800/30 p-3 sm:p-4 rounded-2xl border transition-all ${isExpanded ? 'border-purple-500/50 shadow-lg' : 'border-slate-700/50'}`}>
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 cursor-pointer" onClick={() => setExpandedDraftMealId(isExpanded ? null : meal.id)}>
+                        {isExpanded ? (
+                          <input type="text" value={meal.name} onChange={(e) => setDraftMeals(draftMeals.map(m => m.id === meal.id ? { ...m, name: e.target.value } : m))} onClick={e => e.stopPropagation()} maxLength={50} className="bg-transparent text-white font-bold focus:outline-none border-b border-dashed border-slate-600 focus:border-purple-400 px-1 w-full sm:w-auto flex-1 min-w-0 text-sm sm:text-base" />
+                        ) : (
+                          <h4 className="text-white font-bold text-sm sm:text-base px-1 flex-1 truncate">{meal.name} <span className="text-[10px] text-slate-500 font-normal ml-2">({meal.items.length} items)</span></h4>
+                        )}
+                        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto shrink-0">
+                          <div className="flex gap-2 text-[10px] font-bold bg-slate-900/80 px-2 py-1.5 rounded-lg border border-slate-700/50 shadow-inner">
+                            <span className="text-amber-400">{mCals} kcal</span><span className="text-rose-400">P:{mPro}</span><span className="text-cyan-400">C:{mCarbs}</span><span className="text-yellow-400">F:{mFat}</span>
+                          </div>
+                          <ChevronRight size={18} className={`text-slate-500 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
+                        </div>
+                      </div>
+                      {isExpanded && (
+                        <div className="mt-4 pt-4 border-t border-slate-700/50 animate-in fade-in zoom-in-95 duration-200">
+                          <div className="space-y-2 mb-4">
+                        {meal.items.map((item, idx) => (
+                          <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-slate-900 p-2 sm:p-2.5 rounded-xl border border-slate-800 text-xs sm:text-sm gap-2">
+                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                              <input type="number" inputMode="decimal" min={0} max={9999} value={item.qty} onChange={(e) => updateDraftMealItemQty(meal.id, idx, e.target.value)} className="w-12 sm:w-16 bg-slate-950 border border-slate-700 rounded-md p-1 text-white text-center font-bold focus:outline-none focus:border-purple-500 text-[10px] sm:text-xs" />
+                              <span className="text-slate-500 text-[10px]">{item.unit}</span>
+                              <span className="font-bold text-slate-300 truncate">{item.name}</span>
+                            </div>
+                            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 ml-14 sm:ml-0">
+                              <div className="flex gap-2 text-[9px] sm:text-[10px] font-bold"><span className="text-rose-400">P:{item.protein}</span><span className="text-cyan-400">C:{item.carbs}</span><span className="text-yellow-400">F:{item.fat}</span></div>
+                              <span className="text-[10px] sm:text-xs text-amber-400 font-bold w-12 text-right">{item.calories} kcal</span>
+                              <button onClick={() => removeDraftItem(meal.id, idx)} className="text-slate-600 hover:text-red-400 p-1"><Trash2 size={14}/></button>
+                            </div>
+                          </div>
+                        ))}
+                        {meal.items.length === 0 && <p className="text-[10px] sm:text-xs text-slate-500 italic px-2">No food added yet.</p>}
+                      </div>
+                      {activeAddingMealId !== meal.id ? (
+                        <button onClick={() => setActiveAddingMealId(meal.id)} className="text-purple-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-purple-500/10 px-3 py-2 rounded-lg transition-colors w-max"><Plus size={14}/> Add Food</button>
+                      ) : (
+                        <div className="bg-slate-950 p-3 sm:p-4 rounded-xl border border-purple-500/50 relative">
+                          <button onClick={() => { setActiveAddingMealId(null); setPlanSearchQuery(''); setInlinePlanAddFoodMode(false); }} className="absolute top-2 right-2 text-slate-500 hover:text-white"><X size={16}/></button>
+                          <div className="flex justify-between items-center mb-3">
+                            <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase flex items-center gap-2"><Search size={14}/> Add to {meal.name}</h4>
+                            <button onClick={() => setInlinePlanAddFoodMode(!inlinePlanAddFoodMode)} className="text-orange-400 hover:text-white text-[10px] sm:text-xs font-bold bg-orange-500/10 px-2 py-1 rounded-lg flex items-center gap-1"><Plus size={12}/> New Food</button>
+                          </div>
+                          
+                          <input type="text" placeholder="Search saved foods or recipes..." maxLength={50} value={planSearchQuery} onChange={(e) => setPlanSearchQuery(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-purple-500 text-xs mb-3" />
+                          
+                          {inlinePlanAddFoodMode && (
+                            <div className="mb-4 p-4 border border-orange-500/30 bg-slate-900 rounded-xl animate-in fade-in zoom-in-95 duration-200">
+                              <h5 className="text-[10px] font-bold text-orange-400 uppercase mb-3">Create Quick Food</h5>
+                              <div className="grid grid-cols-2 gap-3 mb-3">
+                                <div><input type="text" value={newIngredient.name} onChange={(e)=>setNewIngredient({...newIngredient, name: e.target.value})} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Food Name" /></div>
+                                <div><select value={newIngredient.category} onChange={(e)=>setNewIngredient({...newIngredient, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs"><option>Proteins</option><option>Carbs</option><option>Fats</option><option>Spices</option><option>Sauces</option></select></div>
+                              </div>
+                              <div className="grid grid-cols-5 gap-2 mb-3">
+                                <div className="col-span-2"><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.baseQuantity} onChange={(e)=>setNewIngredient({...newIngredient, baseQuantity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Qty" /></div>
+                                <div className="col-span-3"><input type="text" value={newIngredient.unit} onChange={(e)=>setNewIngredient({...newIngredient, unit: e.target.value})} maxLength={20} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Unit (e.g. g)" /></div>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 mb-4">
+                                <div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.protein} onChange={(e)=>setNewIngredient({...newIngredient, protein: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-rose-500 text-xs text-center" placeholder="Pro(g)" /></div>
+                                <div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.carbs} onChange={(e)=>setNewIngredient({...newIngredient, carbs: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs text-center" placeholder="Carb(g)" /></div>
+                                <div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.fat} onChange={(e)=>setNewIngredient({...newIngredient, fat: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-yellow-500 text-xs text-center" placeholder="Fat(g)" /></div>
+                              </div>
+                              <button onClick={async () => { const item = await saveIngredient(); if (item) { addItemToDraftMeal(item, item.baseQuantity); setInlinePlanAddFoodMode(false); } }} className="w-full bg-orange-500 text-white py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-orange-600 transition-colors">SAVE & ADD TO MEAL</button>
+                            </div>
+                          )}
+                          <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
+                            {filteredPlanSearchDb.map(ing => (
+                              <button key={ing.id} onClick={() => addItemToDraftMeal(ing, ing.baseQuantity)} className="w-full flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2 hover:border-purple-500 transition-colors text-left group">
+                                <div className="min-w-0 flex-1 pr-2">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1 sm:gap-2 truncate">{ing.items ? <ChefHat size={10} className="text-yellow-400 shrink-0"/> : <Apple size={10} className="text-orange-400 shrink-0"/>} <span className="truncate">{ing.name}</span></p>
+                                  </div>
+                                  <div className="flex gap-2 text-[9px] font-bold"><span className="text-amber-400">{ing.calories} kcal</span><span className="text-rose-400">P:{ing.protein}g</span><span className="text-cyan-400">C:{ing.carbs}g</span><span className="text-yellow-400">F:{ing.fat}g</span></div>
+                                </div>
+                                <div className="bg-slate-800 p-1.5 rounded-md text-slate-400 group-hover:bg-purple-500 group-hover:text-white transition-colors shrink-0">
+                                  <Plus size={14} />
+                                </div>
+                              </button>
                             ))}
+                            {filteredPlanSearchDb.length === 0 && <p className="text-[10px] text-slate-500 text-center py-2">No results found.</p>}
                           </div>
                         </div>
-                        <div className="bg-slate-800/50 p-4 border-t border-slate-800 mt-auto">
+                      )}
+                        </div>
+                      )}
+                    </div>
+                    );
+                  })}
+                </div>
+                <button onClick={saveTemplate} className="w-full bg-purple-500 text-white py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-purple-600 transition-colors">SAVE MEAL PLAN</button>
+              </div>
+            );
+            
+            return (
+              <div className="animate-in fade-in duration-500 space-y-6">
+                {!isCreatingTemplate && (
+                  <button onClick={() => { setIsCreatingTemplate(true); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMealCount(4); setDraftMeals(Array.from({ length: 4 }, (_, i) => ({ id: `dm${i + 1}`, name: `Meal ${i + 1}`, items: [] }))); setPlanSearchQuery(''); setInlinePlanAddFoodMode(false); setActiveAddingMealId(null); setExpandedDraftMealId(null); }} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-purple-400 text-purple-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create Sample Meal Day</button>
+                )}
+                <div className="grid grid-cols-1 gap-4 mt-6">
+                  {isCreatingTemplate && !editingTemplateId && templateBuilderNode}
+
+                  {mealTemplates.map(template => {
+                    if (isCreatingTemplate && editingTemplateId === template.id) {
+                      return <React.Fragment key={template.id}>{templateBuilderNode}</React.Fragment>;
+                    }
+                    return (
+                      <div key={template.id} className="bg-slate-900 border border-slate-800 hover:border-purple-500/50 rounded-3xl shadow-lg overflow-hidden flex flex-col group cursor-pointer transition-colors" onClick={() => editTemplate(template)}>
+                        <div className="p-5 sm:p-6 pb-4 group-hover:bg-slate-800/30 transition-colors">
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className="font-bold text-white text-lg sm:text-xl group-hover:text-purple-400 transition-colors">{template.name}</h3>
+                            <Edit3 size={18} className="text-purple-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold mb-4 flex-wrap"><div className="text-amber-400">{template.totalCalories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div><div className="text-rose-400">{template.totalProtein}g <span className="text-[8px] sm:text-[10px] text-slate-500">PRO</span></div><div className="text-cyan-400">{template.totalCarbs}g <span className="text-[8px] sm:text-[10px] text-slate-500">CARB</span></div><div className="text-yellow-400">{template.totalFat}g <span className="text-[8px] sm:text-[10px] text-slate-500">FAT</span></div></div>
+                          <div className="space-y-2">
+                            {template.meals.map(meal => {
+                              const mCals = Math.round(meal.items.reduce((s, i) => s + i.calories, 0));
+                              const mPro = Math.round(meal.items.reduce((s, i) => s + i.protein, 0));
+                              const mCarbs = Math.round(meal.items.reduce((s, i) => s + i.carbs, 0));
+                              const mFat = Math.round(meal.items.reduce((s, i) => s + i.fat, 0));
+                              return (
+                                <div key={meal.id} className="bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 flex flex-col gap-1">
+                                  <div className="flex justify-between items-center text-xs sm:text-sm">
+                                    <span className="font-bold text-slate-300">{meal.name}</span>
+                                    <div className="flex gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] font-bold">
+                                      <span className="text-amber-400">{mCals} kcal</span>
+                                      <span className="text-rose-400">P:{mPro}</span>
+                                      <span className="text-cyan-400">C:{mCarbs}</span>
+                                      <span className="text-yellow-400">F:{mFat}</span>
+                                    </div>
+                                  </div>
+                                  <span className="text-slate-500 text-[10px] sm:text-xs truncate">{meal.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ') || 'Empty'}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div className="bg-slate-800/50 p-4 border-t border-slate-800 mt-auto" onClick={(e) => e.stopPropagation()}>
                           <div className="flex justify-between items-center mb-3">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assign to Days</span>
-                            <div className="flex gap-2">
-                              <button onClick={() => editTemplate(template)} className="text-slate-400 hover:text-white flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Edit3 size={14} /> Edit</button>
-                              <button onClick={() => deleteTemplate(template.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Trash2 size={14} /> Delete</button>
-                            </div>
+                            <button onClick={() => deleteTemplate(template.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Trash2 size={14} /> Delete</button>
                           </div>
                           <div className="flex gap-1 sm:gap-2">
                             {days.map(day => {
@@ -1448,271 +1601,192 @@ export default function GirlfriendFitnessApp() {
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
-                  <button onClick={() => { setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); setPlanSearchQuery(''); setInlinePlanAddFoodMode(false); setActiveAddingMealId(null); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
-                  <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingTemplateId ? 'Edit Template' : 'Template Builder'}</h3>
-                  
-                  {calcResults && (
-                    <div className="mb-6 bg-slate-950/50 p-4 rounded-2xl border border-slate-800 shadow-inner">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 text-center">
-                        <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className={`absolute bottom-0 left-0 h-1 transition-all duration-500 ${templateTotals.calories > calcResults.calories ? 'bg-indigo-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, (templateTotals.calories / calcResults.calories) * 100)}%` }}></div><p className={`text-[8px] sm:text-[9px] font-bold mb-1 ${templateTotals.calories > calcResults.calories ? 'text-indigo-400' : 'text-slate-400'}`}>TOTAL CALORIES</p><p className={`text-lg sm:text-xl font-black ${templateTotals.calories > calcResults.calories ? 'text-indigo-400' : 'text-amber-400'}`}>{Math.round(templateTotals.calories)} <span className="text-[10px] sm:text-xs text-slate-500 font-medium">/ {calcResults.calories}</span></p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">{templateTotals.calories > calcResults.calories ? `+${Math.round(templateTotals.calories - calcResults.calories)} OVER` : `${Math.round(calcResults.calories - templateTotals.calories)} REMAINING`}</p></div>
-                        <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-rose-500 transition-all duration-500" style={{ width: `${Math.min(100, (templateTotals.protein / calcResults.protein) * 100)}%` }}></div><p className={`text-[8px] sm:text-[9px] font-bold mb-1 ${templateTotals.protein > calcResults.protein ? 'text-rose-500' : 'text-slate-400'}`}>TOTAL PROTEIN</p><p className={`text-lg sm:text-xl font-black ${templateTotals.protein > calcResults.protein ? 'text-rose-500' : 'text-rose-400'}`}>{Math.round(templateTotals.protein)}g <span className="text-[10px] sm:text-xs text-slate-500 font-medium">/ {calcResults.protein}g</span></p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">{templateTotals.protein > calcResults.protein ? `+${Math.round(templateTotals.protein - calcResults.protein)}g OVER` : `${Math.round(calcResults.protein - templateTotals.protein)}g REMAINING`}</p></div>
-                        <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-cyan-500 transition-all duration-500" style={{ width: `${Math.min(100, (templateTotals.carbs / calcResults.carbs) * 100)}%` }}></div><p className={`text-[8px] sm:text-[9px] font-bold mb-1 ${templateTotals.carbs > calcResults.carbs ? 'text-cyan-500' : 'text-slate-400'}`}>TOTAL CARBS</p><p className={`text-lg sm:text-xl font-black ${templateTotals.carbs > calcResults.carbs ? 'text-cyan-500' : 'text-cyan-400'}`}>{Math.round(templateTotals.carbs)}g <span className="text-[10px] sm:text-xs text-slate-500 font-medium">/ {calcResults.carbs}g</span></p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">{templateTotals.carbs > calcResults.carbs ? `+${Math.round(templateTotals.carbs - calcResults.carbs)}g OVER` : `${Math.round(calcResults.carbs - templateTotals.carbs)}g REMAINING`}</p></div>
-                        <div className="bg-slate-900 rounded-xl p-2 sm:p-3 border border-slate-700/50 relative overflow-hidden"><div className="absolute bottom-0 left-0 h-1 bg-yellow-500 transition-all duration-500" style={{ width: `${Math.min(100, (templateTotals.fat / calcResults.fat) * 100)}%` }}></div><p className={`text-[8px] sm:text-[9px] font-bold mb-1 ${templateTotals.fat > calcResults.fat ? 'text-yellow-500' : 'text-slate-400'}`}>TOTAL FAT</p><p className={`text-lg sm:text-xl font-black ${templateTotals.fat > calcResults.fat ? 'text-yellow-500' : 'text-yellow-400'}`}>{Math.round(templateTotals.fat)}g <span className="text-[10px] sm:text-xs text-slate-500 font-medium">/ {calcResults.fat}g</span></p><p className="text-[8px] sm:text-[10px] text-slate-500 mt-1 font-bold">{templateTotals.fat > calcResults.fat ? `+${Math.round(templateTotals.fat - calcResults.fat)}g OVER` : `${Math.round(calcResults.fat - templateTotals.fat)}g REMAINING`}</p></div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div><label className="text-xs font-bold text-slate-500 mb-1 block">TEMPLATE NAME</label><input type="text" placeholder="e.g. Cardio Day Meals" maxLength={50} value={draftTemplateName} onChange={(e)=>setDraftTemplateName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-purple-500 text-sm sm:text-base" /></div>
-                    <div><label className="text-xs font-bold text-slate-500 mb-1 block">NUMBER OF MEALS</label><select value={draftMealCount} onChange={(e)=>handleMealCountChange(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-white font-bold focus:outline-none focus:border-purple-500 text-sm sm:text-base">{[1,2,3,4,5,6].map(num => <option key={num} value={num}>{num} Meals</option>)}</select></div>
-                  </div>
-                  <div className="space-y-4 mb-6">
-                    {draftMeals.map((meal) => {
-                      const mCals = Math.round(meal.items.reduce((s, i) => s + i.calories, 0));
-                      const mPro = Math.round(meal.items.reduce((s, i) => s + i.protein, 0));
-                      const mCarbs = Math.round(meal.items.reduce((s, i) => s + i.carbs, 0));
-                      const mFat = Math.round(meal.items.reduce((s, i) => s + i.fat, 0));
-                      const isExpanded = expandedDraftMealId === meal.id;
-                      return (
-                      <div key={meal.id} className={`bg-slate-800/30 p-3 sm:p-4 rounded-2xl border transition-all ${isExpanded ? 'border-purple-500/50 shadow-lg' : 'border-slate-700/50'}`}>
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 cursor-pointer" onClick={() => setExpandedDraftMealId(isExpanded ? null : meal.id)}>
-                          {isExpanded ? (
-                            <input type="text" value={meal.name} onChange={(e) => setDraftMeals(draftMeals.map(m => m.id === meal.id ? { ...m, name: e.target.value } : m))} onClick={e => e.stopPropagation()} maxLength={50} className="bg-transparent text-white font-bold focus:outline-none border-b border-dashed border-slate-600 focus:border-purple-400 px-1 w-full sm:w-auto flex-1 min-w-0 text-sm sm:text-base" />
-                          ) : (
-                            <h4 className="text-white font-bold text-sm sm:text-base px-1 flex-1 truncate">{meal.name} <span className="text-[10px] text-slate-500 font-normal ml-2">({meal.items.length} items)</span></h4>
-                          )}
-                          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto shrink-0">
-                            <div className="flex gap-2 text-[10px] font-bold bg-slate-900/80 px-2 py-1.5 rounded-lg border border-slate-700/50 shadow-inner">
-                              <span className="text-amber-400">{mCals} kcal</span><span className="text-rose-400">P:{mPro}</span><span className="text-cyan-400">C:{mCarbs}</span><span className="text-yellow-400">F:{mFat}</span>
-                            </div>
-                            <button onClick={(e) => { e.stopPropagation(); setExpandedDraftMealId(isExpanded ? null : meal.id); }} className={`text-[10px] sm:text-xs font-bold flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg transition-colors shrink-0 ${isExpanded ? 'bg-emerald-500/20 text-emerald-400 hover:text-white hover:bg-emerald-500' : 'bg-purple-500/10 text-purple-400 hover:text-white hover:bg-purple-500/20'}`}>
-                              {isExpanded ? <><CheckCircle2 size={14}/> Save</> : <><Edit3 size={14}/> Edit</>}
-                            </button>
-                            <ChevronRight size={18} className={`text-slate-500 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
-                          </div>
-                        </div>
-                        {isExpanded && (
-                          <div className="mt-4 pt-4 border-t border-slate-700/50 animate-in fade-in zoom-in-95 duration-200">
-                            <div className="space-y-2 mb-4">
-                          {meal.items.map((item, idx) => (
-                            <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-slate-900 p-2 sm:p-2.5 rounded-xl border border-slate-800 text-xs sm:text-sm gap-2">
-                              <div className="flex-1 min-w-0 flex items-center gap-2">
-                                <input type="number" inputMode="decimal" min={0} max={9999} value={item.qty} onChange={(e) => updateDraftMealItemQty(meal.id, idx, e.target.value)} className="w-12 sm:w-16 bg-slate-950 border border-slate-700 rounded-md p-1 text-white text-center font-bold focus:outline-none focus:border-purple-500 text-[10px] sm:text-xs" />
-                                <span className="text-slate-500 text-[10px]">{item.unit}</span>
-                                <span className="font-bold text-slate-300 truncate">{item.name}</span>
-                              </div>
-                              <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 ml-14 sm:ml-0">
-                                <div className="flex gap-2 text-[9px] sm:text-[10px] font-bold"><span className="text-rose-400">P:{item.protein}</span><span className="text-cyan-400">C:{item.carbs}</span><span className="text-yellow-400">F:{item.fat}</span></div>
-                                <span className="text-[10px] sm:text-xs text-amber-400 font-bold w-12 text-right">{item.calories} kcal</span>
-                                <button onClick={() => removeDraftItem(meal.id, idx)} className="text-slate-600 hover:text-red-400 p-1"><Trash2 size={14}/></button>
-                              </div>
-                            </div>
-                          ))}
-                          {meal.items.length === 0 && <p className="text-[10px] sm:text-xs text-slate-500 italic px-2">No food added yet.</p>}
-                        </div>
-                        {activeAddingMealId !== meal.id ? (
-                          <button onClick={() => setActiveAddingMealId(meal.id)} className="text-purple-400 hover:text-white text-[10px] sm:text-xs font-bold flex items-center gap-1 bg-purple-500/10 px-3 py-2 rounded-lg transition-colors w-max"><Plus size={14}/> Add Food</button>
-                        ) : (
-                          <div className="bg-slate-950 p-3 sm:p-4 rounded-xl border border-purple-500/50 relative">
-                            <button onClick={() => { setActiveAddingMealId(null); setPlanSearchQuery(''); setInlinePlanAddFoodMode(false); }} className="absolute top-2 right-2 text-slate-500 hover:text-white"><X size={16}/></button>
-                            <div className="flex justify-between items-center mb-3">
-                              <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase flex items-center gap-2"><Search size={14}/> Add to {meal.name}</h4>
-                              <button onClick={() => setInlinePlanAddFoodMode(!inlinePlanAddFoodMode)} className="text-orange-400 hover:text-white text-[10px] sm:text-xs font-bold bg-orange-500/10 px-2 py-1 rounded-lg flex items-center gap-1"><Plus size={12}/> New Food</button>
-                            </div>
-                            
-                            <input type="text" placeholder="Search saved foods or recipes..." maxLength={50} value={planSearchQuery} onChange={(e) => setPlanSearchQuery(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-purple-500 text-xs mb-3" />
-                            
-                            {inlinePlanAddFoodMode && (
-                              <div className="mb-4 p-4 border border-orange-500/30 bg-slate-900 rounded-xl animate-in fade-in zoom-in-95 duration-200">
-                                <h5 className="text-[10px] font-bold text-orange-400 uppercase mb-3">Create Quick Food</h5>
-                                <div className="grid grid-cols-2 gap-3 mb-3">
-                                  <div><input type="text" value={newIngredient.name} onChange={(e)=>setNewIngredient({...newIngredient, name: e.target.value})} maxLength={50} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Food Name" /></div>
-                                  <div><select value={newIngredient.category} onChange={(e)=>setNewIngredient({...newIngredient, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs"><option>Proteins</option><option>Carbs</option><option>Fats</option><option>Spices</option><option>Sauces</option></select></div>
-                                </div>
-                                <div className="grid grid-cols-5 gap-2 mb-3">
-                                  <div className="col-span-2"><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.baseQuantity} onChange={(e)=>setNewIngredient({...newIngredient, baseQuantity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Qty" /></div>
-                                  <div className="col-span-3"><input type="text" value={newIngredient.unit} onChange={(e)=>setNewIngredient({...newIngredient, unit: e.target.value})} maxLength={20} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Unit (e.g. g)" /></div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 mb-4">
-                                  <div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.protein} onChange={(e)=>setNewIngredient({...newIngredient, protein: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-rose-500 text-xs text-center" placeholder="Pro(g)" /></div>
-                                  <div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.carbs} onChange={(e)=>setNewIngredient({...newIngredient, carbs: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs text-center" placeholder="Carb(g)" /></div>
-                                  <div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.fat} onChange={(e)=>setNewIngredient({...newIngredient, fat: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-yellow-500 text-xs text-center" placeholder="Fat(g)" /></div>
-                                </div>
-                                <button onClick={async () => { const item = await saveIngredient(); if (item) { addItemToDraftMeal(item, item.baseQuantity); setInlinePlanAddFoodMode(false); } }} className="w-full bg-orange-500 text-white py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-orange-600 transition-colors">SAVE & ADD TO MEAL</button>
-                              </div>
-                            )}
-                            <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
-                              {filteredPlanSearchDb.map(ing => (
-                                <button key={ing.id} onClick={() => addItemToDraftMeal(ing, ing.baseQuantity)} className="w-full flex justify-between items-center bg-slate-900 p-2 sm:p-2.5 rounded-lg border border-slate-800 gap-2 hover:border-purple-500 transition-colors text-left group">
-                                  <div className="min-w-0 flex-1 pr-2">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1 sm:gap-2 truncate">{ing.items ? <ChefHat size={10} className="text-yellow-400 shrink-0"/> : <Apple size={10} className="text-orange-400 shrink-0"/>} <span className="truncate">{ing.name}</span></p>
-                                    </div>
-                                    <div className="flex gap-2 text-[9px] font-bold"><span className="text-amber-400">{ing.calories} kcal</span><span className="text-rose-400">P:{ing.protein}g</span><span className="text-cyan-400">C:{ing.carbs}g</span><span className="text-yellow-400">F:{ing.fat}g</span></div>
-                                  </div>
-                                  <div className="bg-slate-800 p-1.5 rounded-md text-slate-400 group-hover:bg-purple-500 group-hover:text-white transition-colors shrink-0">
-                                    <Plus size={14} />
-                                  </div>
-                                </button>
-                              ))}
-                              {filteredPlanSearchDb.length === 0 && <p className="text-[10px] text-slate-500 text-center py-2">No results found.</p>}
-                            </div>
-                          </div>
-                        )}
-                          </div>
-                        )}
-                      </div>
-                      );
-                    })}
-                  </div>
-                  <button onClick={saveTemplate} className="w-full bg-purple-500 text-white py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-purple-600 transition-colors">SAVE MEAL PLAN</button>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           {/* === NUTRITION HUB (My Meals) === */}
-          {mainTab === 'nutrition' && subTabs.nutrition === 'myMeals' && (
-            <div className="animate-in fade-in duration-500 space-y-6">
-              {!isCreatingMyMeal ? (
-                <>
-                  <button onClick={() => setIsCreatingMyMeal(true)} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-yellow-400 text-yellow-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create Custom Meal</button>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                    {myMeals.map(myMeal => (
-                      <div key={myMeal.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col">
-                        <div className="p-5 sm:p-6 pb-4 relative"><div className="absolute top-0 right-0 p-4 opacity-5"><Utensils size={80} /></div><h3 className="font-bold text-white text-lg sm:text-xl mb-1 relative z-10">{myMeal.name}</h3><p className="text-[10px] sm:text-xs text-slate-400 mb-4 relative z-10 truncate">{myMeal.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ')}</p><div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold relative z-10 flex-wrap"><div className="text-amber-400">{myMeal.calories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div></div></div>
+          {mainTab === 'nutrition' && subTabs.nutrition === 'myMeals' && (() => {
+            const myMealBuilderNode = (
+              <div className="bg-slate-900 border border-yellow-500 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+                <button onClick={() => { setIsCreatingMyMeal(false); setEditingMyMealId(null); setDraftMyMealName(''); setDraftMyMealInstructions(''); setDraftMyMealItems([]); setMyMealSearchQuery(''); setInlineAddFoodMode(false); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingMyMealId ? 'Edit Meal' : 'Custom Meal Builder'}</h3>
+                <div className="space-y-3 mb-6">
+                  <input type="text" placeholder="Meal Name (e.g. Protein Shake)" maxLength={50} value={draftMyMealName} onChange={(e)=>setDraftMyMealName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm sm:text-base font-bold text-white focus:outline-none focus:border-yellow-500" />
+                  <textarea placeholder="Recipe Instructions / Notes (Optional)... Paste URL or steps here!" maxLength={2000} value={draftMyMealInstructions} onChange={(e)=>setDraftMyMealInstructions(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm text-slate-300 focus:outline-none focus:border-yellow-500 min-h-[100px] resize-y" />
+                </div>
+                
+                <div className="mb-6 bg-slate-950/50 p-4 rounded-2xl border border-slate-800 shadow-inner flex justify-between sm:justify-around text-center gap-2">
+                  <div><p className="text-[9px] sm:text-[10px] text-slate-500 font-bold mb-1">CALORIES</p><p className="text-lg sm:text-2xl font-black text-amber-400">{Math.round(myMealDraftTotals.calories)}</p></div>
+                  <div><p className="text-[9px] sm:text-[10px] text-slate-500 font-bold mb-1">PROTEIN</p><p className="text-lg sm:text-2xl font-black text-rose-400">{Math.round(myMealDraftTotals.protein)}g</p></div>
+                  <div><p className="text-[9px] sm:text-[10px] text-slate-500 font-bold mb-1">CARBS</p><p className="text-lg sm:text-2xl font-black text-cyan-400">{Math.round(myMealDraftTotals.carbs)}g</p></div>
+                  <div><p className="text-[9px] sm:text-[10px] text-slate-500 font-bold mb-1">FAT</p><p className="text-lg sm:text-2xl font-black text-yellow-400">{Math.round(myMealDraftTotals.fat)}g</p></div>
+                </div>
+
+                {draftMyMealItems.length > 0 && (
+                  <div className="mb-6 space-y-2">
+                    {draftMyMealItems.map((d, idx) => (
+                      <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-700/50 gap-2">
+                        <div className="flex-1 min-w-0 flex items-center gap-2">
+                          <input type="number" inputMode="decimal" min={0} max={9999} value={d.qty} onChange={(e) => updateDraftMyMealItemQty(idx, e.target.value)} className="w-12 sm:w-16 bg-slate-900 border border-slate-700 rounded-md p-1.5 text-white text-center font-bold focus:outline-none focus:border-yellow-500 text-xs" />
+                          <span className="text-slate-500 text-[10px] sm:text-xs">{d.unit}</span>
+                          <span className="font-bold text-xs sm:text-sm text-white truncate">{d.name}</span>
+                        </div>
+                        <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 ml-14 sm:ml-0">
+                          <div className="flex gap-2 text-[9px] sm:text-[10px] font-bold"><span className="text-rose-400">P:{d.protein}</span><span className="text-cyan-400">C:{d.carbs}</span><span className="text-yellow-400">F:{d.fat}</span></div>
+                          <span className="text-[10px] sm:text-xs text-amber-400 font-bold w-12 text-right">{d.calories} kcal</span>
+                          <button onClick={() => setDraftMyMealItems(draftMyMealItems.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400 p-1"><Trash2 size={16}/></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="bg-slate-800/30 p-3 sm:p-4 rounded-2xl border border-slate-700/50 mb-6">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase flex items-center gap-2"><Search size={14}/> Add Ingredients</h4>
+                    <button onClick={() => setInlineAddFoodMode(!inlineAddFoodMode)} className="text-orange-400 hover:text-white text-[10px] sm:text-xs font-bold bg-orange-500/10 px-2 py-1 rounded-lg flex items-center gap-1"><Plus size={12}/> New Food</button>
+                  </div>
+                  {inlineAddFoodMode && (
+                    <div className="mb-4 p-4 border border-orange-500/30 bg-slate-900 rounded-xl animate-in fade-in zoom-in-95 duration-200">
+                      <h5 className="text-[10px] font-bold text-orange-400 uppercase mb-3">Create Quick Food</h5>
+                      <div className="grid grid-cols-2 gap-3 mb-3"><div><input type="text" maxLength={50} value={newIngredient.name} onChange={(e)=>setNewIngredient({...newIngredient, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Food Name" /></div><div><select value={newIngredient.category} onChange={(e)=>setNewIngredient({...newIngredient, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs"><option>Proteins</option><option>Carbs</option><option>Fats</option><option>Spices</option><option>Sauces</option></select></div></div>
+                      <div className="grid grid-cols-5 gap-2 mb-3"><div className="col-span-2"><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.baseQuantity} onChange={(e)=>setNewIngredient({...newIngredient, baseQuantity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Qty" /></div><div className="col-span-3"><input type="text" maxLength={20} value={newIngredient.unit} onChange={(e)=>setNewIngredient({...newIngredient, unit: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Unit (e.g. g)" /></div></div>
+                      <div className="grid grid-cols-3 gap-2 mb-4"><div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.protein} onChange={(e)=>setNewIngredient({...newIngredient, protein: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-rose-500 text-xs text-center" placeholder="Pro(g)" /></div><div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.carbs} onChange={(e)=>setNewIngredient({...newIngredient, carbs: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs text-center" placeholder="Carb(g)" /></div><div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.fat} onChange={(e)=>setNewIngredient({...newIngredient, fat: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-yellow-500 text-xs text-center" placeholder="Fat(g)" /></div></div>
+                      <button onClick={async () => { const item = await saveIngredient(); if (item) { addIngredientToMyMeal(item, item.baseQuantity); setInlineAddFoodMode(false); } }} className="w-full bg-orange-500 text-white py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-orange-600 transition-colors">SAVE & ADD TO MEAL</button>
+                    </div>
+                  )}
+                  <input type="text" placeholder="Search database..." maxLength={50} value={myMealSearchQuery} onChange={(e) => setMyMealSearchQuery(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-yellow-500 text-xs mb-3" />
+                  <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
+                    {filteredMyMealSearchDb.map(ing => (
+                      <button key={ing.id} onClick={() => addIngredientToMyMeal(ing, ing.baseQuantity)} className="w-full flex justify-between items-center bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 gap-2 hover:border-yellow-500 transition-colors text-left group">
+                        <div className="min-w-0 flex-1 pr-2"><div className="flex items-center gap-2 mb-1"><p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p><span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${getCategoryColor(ing.category)}`}>{ing.category}</span></div><div className="flex gap-2 text-[9px] font-bold"><span className="text-amber-400">{ing.calories} kcal</span><span className="text-rose-400">P:{ing.protein}g</span><span className="text-cyan-400">C:{ing.carbs}g</span><span className="text-yellow-400">F:{ing.fat}g</span></div></div>
+                        <div className="bg-slate-800 p-1.5 rounded-lg text-slate-400 group-hover:bg-yellow-500 group-hover:text-white transition-colors shrink-0"><Plus size={14} /></div>
+                      </button>
+                    ))}
+                    {filteredMyMealSearchDb.length === 0 && <p className="text-[10px] text-slate-500 text-center py-2">No ingredients found.</p>}
+                  </div>
+                </div>
+                <button onClick={saveMyMeal} className="w-full bg-yellow-500 text-slate-950 py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-yellow-400 transition-colors">SAVE MEAL</button>
+              </div>
+            );
+
+            return (
+              <div className="animate-in fade-in duration-500 space-y-6">
+                {!isCreatingMyMeal && (
+                  <button onClick={() => { setIsCreatingMyMeal(true); setEditingMyMealId(null); setDraftMyMealName(''); setDraftMyMealInstructions(''); setDraftMyMealItems([]); }} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-yellow-400 text-yellow-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Create Custom Meal</button>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  {isCreatingMyMeal && !editingMyMealId && <div className="md:col-span-2">{myMealBuilderNode}</div>}
+
+                  {myMeals.map(myMeal => {
+                    if (isCreatingMyMeal && editingMyMealId === myMeal.id) {
+                      return <React.Fragment key={myMeal.id}><div className="md:col-span-2">{myMealBuilderNode}</div></React.Fragment>;
+                    }
+                    return (
+                      <div key={myMeal.id} className="bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col cursor-pointer group hover:border-yellow-500/50 transition-colors" onClick={() => editMyMeal(myMeal)}>
+                        <div className="p-5 sm:p-6 pb-4 relative group-hover:bg-slate-800/30 transition-colors">
+                          <div className="absolute top-0 right-0 p-4 opacity-5"><Utensils size={80} /></div>
+                          <div className="flex justify-between items-start mb-1 relative z-10">
+                            <h3 className="font-bold text-white text-lg sm:text-xl group-hover:text-yellow-400 transition-colors">{myMeal.name}</h3>
+                            <Edit3 size={18} className="text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <p className="text-[10px] sm:text-xs text-slate-400 mb-4 relative z-10 truncate">{myMeal.items.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ')}</p>
+                        </div>
                         <div className="flex gap-2 sm:gap-4 text-xs sm:text-sm font-bold relative z-10 flex-wrap px-5 sm:px-6 mb-4"><div className="text-amber-400">{myMeal.calories} <span className="text-[8px] sm:text-[10px] text-slate-500">KCAL</span></div><div className="text-rose-400">{myMeal.protein}g <span className="text-[8px] sm:text-[10px] text-slate-500">PRO</span></div><div className="text-cyan-400">{myMeal.carbs}g <span className="text-[8px] sm:text-[10px] text-slate-500">CARB</span></div><div className="text-yellow-400">{myMeal.fat}g <span className="text-[8px] sm:text-[10px] text-slate-500">FAT</span></div></div>
                         {myMeal.instructions && (
                           <div className="px-5 sm:px-6 pb-5 relative z-10">
-                            <div className="bg-slate-950/60 border-l-4 border-yellow-500/50 p-4 rounded-r-2xl shadow-inner">
-                              <p className="text-xs sm:text-sm text-slate-300 italic whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto scrollbar-hide">
+                            <div className="bg-slate-950/80 border border-slate-800/50 border-l-4 border-l-yellow-500 p-4 rounded-2xl shadow-inner relative">
+                              <div className="absolute top-2 right-3 text-yellow-500/10"><BookOpen size={24}/></div>
+                              <h5 className="text-[10px] font-bold text-yellow-500 uppercase tracking-wider mb-2">Preparation Notes</h5>
+                              <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto scrollbar-hide relative z-10">
                                 {myMeal.instructions}
                               </p>
                             </div>
                           </div>
                         )}
-                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto relative z-10"><button onClick={() => editMyMeal(myMeal)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors"><Edit3 size={14} /> Edit</button><button onClick={() => deleteMyMeal(myMeal.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors"><Trash2 size={14} /> Delete</button></div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-[2rem] shadow-2xl relative">
-                  <button onClick={() => { setIsCreatingMyMeal(false); setEditingMyMealId(null); setDraftMyMealName(''); setDraftMyMealInstructions(''); setDraftMyMealItems([]); }} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-500 hover:text-white"><X size={24}/></button>
-                  <h3 className="text-lg sm:text-xl font-bold text-white mb-6 pr-8">{editingMyMealId ? 'Edit Meal' : 'Custom Meal Builder'}</h3>
-                  <div className="space-y-3 mb-6">
-                    <input type="text" placeholder="Meal Name (e.g. Protein Shake)" maxLength={50} value={draftMyMealName} onChange={(e)=>setDraftMyMealName(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm sm:text-base font-bold text-white focus:outline-none focus:border-yellow-500" />
-                    <textarea placeholder="Recipe Instructions / Notes (Optional)... Paste URL or steps here!" maxLength={2000} value={draftMyMealInstructions} onChange={(e)=>setDraftMyMealInstructions(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 sm:p-4 text-sm text-slate-300 focus:outline-none focus:border-yellow-500 min-h-[100px] resize-y" />
-                  </div>
-                  
-                  <div className="mb-6 bg-slate-950/50 p-4 rounded-2xl border border-slate-800 shadow-inner flex justify-between sm:justify-around text-center gap-2">
-                    <div><p className="text-[9px] sm:text-[10px] text-slate-500 font-bold mb-1">CALORIES</p><p className="text-lg sm:text-2xl font-black text-amber-400">{Math.round(myMealDraftTotals.calories)}</p></div>
-                    <div><p className="text-[9px] sm:text-[10px] text-slate-500 font-bold mb-1">PROTEIN</p><p className="text-lg sm:text-2xl font-black text-rose-400">{Math.round(myMealDraftTotals.protein)}g</p></div>
-                    <div><p className="text-[9px] sm:text-[10px] text-slate-500 font-bold mb-1">CARBS</p><p className="text-lg sm:text-2xl font-black text-cyan-400">{Math.round(myMealDraftTotals.carbs)}g</p></div>
-                    <div><p className="text-[9px] sm:text-[10px] text-slate-500 font-bold mb-1">FAT</p><p className="text-lg sm:text-2xl font-black text-yellow-400">{Math.round(myMealDraftTotals.fat)}g</p></div>
-                  </div>
-
-                  {draftMyMealItems.length > 0 && (
-                    <div className="mb-6 space-y-2">
-                      {draftMyMealItems.map((d, idx) => (
-                        <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-slate-800/50 p-2 sm:p-3 rounded-xl border border-slate-700/50 gap-2">
-                          <div className="flex-1 min-w-0 flex items-center gap-2">
-                            <input type="number" inputMode="decimal" min={0} max={9999} value={d.qty} onChange={(e) => updateDraftMyMealItemQty(idx, e.target.value)} className="w-12 sm:w-16 bg-slate-900 border border-slate-700 rounded-md p-1.5 text-white text-center font-bold focus:outline-none focus:border-yellow-500 text-xs" />
-                            <span className="text-slate-500 text-[10px] sm:text-xs">{d.unit}</span>
-                            <span className="font-bold text-xs sm:text-sm text-white truncate">{d.name}</span>
-                          </div>
-                          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 ml-14 sm:ml-0">
-                            <div className="flex gap-2 text-[9px] sm:text-[10px] font-bold"><span className="text-rose-400">P:{d.protein}</span><span className="text-cyan-400">C:{d.carbs}</span><span className="text-yellow-400">F:{d.fat}</span></div>
-                            <span className="text-[10px] sm:text-xs text-amber-400 font-bold w-12 text-right">{d.calories} kcal</span>
-                            <button onClick={() => setDraftMyMealItems(draftMyMealItems.filter((_, i) => i !== idx))} className="text-slate-500 hover:text-red-400 p-1"><Trash2 size={16}/></button>
-                          </div>
+                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end mt-auto relative z-10" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => deleteMyMeal(myMeal.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Trash2 size={14} /> Delete</button>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="bg-slate-800/30 p-3 sm:p-4 rounded-2xl border border-slate-700/50 mb-6">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase flex items-center gap-2"><Search size={14}/> Add Ingredients</h4>
-                      <button onClick={() => setInlineAddFoodMode(!inlineAddFoodMode)} className="text-orange-400 hover:text-white text-[10px] sm:text-xs font-bold bg-orange-500/10 px-2 py-1 rounded-lg flex items-center gap-1"><Plus size={12}/> New Food</button>
-                    </div>
-                    {inlineAddFoodMode && (
-                      <div className="mb-4 p-4 border border-orange-500/30 bg-slate-900 rounded-xl animate-in fade-in zoom-in-95 duration-200">
-                        <h5 className="text-[10px] font-bold text-orange-400 uppercase mb-3">Create Quick Food</h5>
-                        <div className="grid grid-cols-2 gap-3 mb-3"><div><input type="text" maxLength={50} value={newIngredient.name} onChange={(e)=>setNewIngredient({...newIngredient, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Food Name" /></div><div><select value={newIngredient.category} onChange={(e)=>setNewIngredient({...newIngredient, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs"><option>Proteins</option><option>Carbs</option><option>Fats</option><option>Spices</option><option>Sauces</option></select></div></div>
-                        <div className="grid grid-cols-5 gap-2 mb-3"><div className="col-span-2"><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.baseQuantity} onChange={(e)=>setNewIngredient({...newIngredient, baseQuantity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Qty" /></div><div className="col-span-3"><input type="text" maxLength={20} value={newIngredient.unit} onChange={(e)=>setNewIngredient({...newIngredient, unit: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-orange-500 text-xs" placeholder="Unit (e.g. g)" /></div></div>
-                        <div className="grid grid-cols-3 gap-2 mb-4"><div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.protein} onChange={(e)=>setNewIngredient({...newIngredient, protein: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-rose-500 text-xs text-center" placeholder="Pro(g)" /></div><div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.carbs} onChange={(e)=>setNewIngredient({...newIngredient, carbs: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 text-xs text-center" placeholder="Carb(g)" /></div><div><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.fat} onChange={(e)=>setNewIngredient({...newIngredient, fat: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-yellow-500 text-xs text-center" placeholder="Fat(g)" /></div></div>
-                        <button onClick={async () => { const item = await saveIngredient(); if (item) { addIngredientToMyMeal(item, item.baseQuantity); setInlineAddFoodMode(false); } }} className="w-full bg-orange-500 text-white py-2 rounded-lg font-bold text-xs shadow-lg hover:bg-orange-600 transition-colors">SAVE & ADD TO MEAL</button>
                       </div>
-                    )}
-                    <input type="text" placeholder="Search database..." maxLength={50} value={myMealSearchQuery} onChange={(e) => setMyMealSearchQuery(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-yellow-500 text-xs mb-3" />
-                    <div className="max-h-48 overflow-y-auto space-y-2 scrollbar-hide">
-                      {filteredMyMealSearchDb.map(ing => (
-                        <button key={ing.id} onClick={() => addIngredientToMyMeal(ing, ing.baseQuantity)} className="w-full flex justify-between items-center bg-slate-950 p-2 sm:p-3 rounded-xl border border-slate-800 gap-2 hover:border-yellow-500 transition-colors text-left group">
-                          <div className="min-w-0 flex-1 pr-2"><div className="flex items-center gap-2 mb-1"><p className="text-xs sm:text-sm font-bold text-white truncate">{ing.name}</p><span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${getCategoryColor(ing.category)}`}>{ing.category}</span></div><div className="flex gap-2 text-[9px] font-bold"><span className="text-amber-400">{ing.calories} kcal</span><span className="text-rose-400">P:{ing.protein}g</span><span className="text-cyan-400">C:{ing.carbs}g</span><span className="text-yellow-400">F:{ing.fat}g</span></div></div>
-                          <div className="bg-slate-800 p-1.5 rounded-lg text-slate-400 group-hover:bg-yellow-500 group-hover:text-white transition-colors shrink-0"><Plus size={14} /></div>
-                        </button>
-                      ))}
-                      {filteredMyMealSearchDb.length === 0 && <p className="text-[10px] text-slate-500 text-center py-2">No ingredients found.</p>}
-                    </div>
-                  </div>
-                  <button onClick={saveMyMeal} className="w-full bg-yellow-500 text-slate-950 py-3 sm:py-4 rounded-full font-extrabold text-sm sm:text-lg shadow-lg hover:bg-yellow-400 transition-colors">SAVE MEAL</button>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           {/* === NUTRITION HUB (Ingredients) === */}
-          {mainTab === 'nutrition' && subTabs.nutrition === 'ingredients' && (
-            <div className="animate-in fade-in duration-500 space-y-6">
-              <div className="flex justify-between items-end mb-4"><div><h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><Apple className="text-orange-400" size={28} /> Database</h2></div></div>
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
-                {ingredientCategories.map(cat => (
-                  <button key={cat} onClick={() => setActiveIngredientFilter(cat)} className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeIngredientFilter === cat ? 'bg-orange-500 text-white shadow-lg' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>{cat}</button>
-                ))}
-              </div>
-              <div className="bg-slate-900 p-1 rounded-3xl border border-slate-800 shadow-xl overflow-hidden transition-all">
-                <button onClick={() => { if (showAddIngredient) { setShowAddIngredient(false); setEditingIngredientId(null); setNewIngredient({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' }); } else { setShowAddIngredient(true); } }} className="w-full p-3 sm:p-4 flex items-center justify-between text-orange-400 font-bold hover:bg-slate-800/50 transition-colors rounded-2xl text-xs sm:text-base">
-                  <span className="flex items-center gap-2"><Plus size={18}/> {editingIngredientId ? 'Edit Ingredient' : 'Add Custom Ingredient'}</span><ChevronRight className={`transition-transform duration-300 ${showAddIngredient ? 'rotate-90' : ''}`} size={18} />
-                </button>
-                {showAddIngredient && (
-                  <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-900/50">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
-                      <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">FOOD NAME</label><input type="text" value={newIngredient.name} onChange={(e)=>setNewIngredient({...newIngredient, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm" placeholder="e.g. Bangus" /></div>
-                      <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">CATEGORY</label><select value={newIngredient.category} onChange={(e)=>setNewIngredient({...newIngredient, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm"><option>Proteins</option><option>Carbs</option><option>Fats</option><option>Spices</option><option>Sauces</option></select></div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
-                      <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">BASE QUANTITY</label><input type="number" inputMode="decimal" value={newIngredient.baseQuantity} onChange={(e)=>setNewIngredient({...newIngredient, baseQuantity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm" placeholder="100" /></div>
-                      <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">UNIT</label><input type="text" value={newIngredient.unit} onChange={(e)=>setNewIngredient({...newIngredient, unit: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm" placeholder="g, ml, cup" /></div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-                      <div><label className="text-[9px] sm:text-[10px] font-bold text-rose-400 mb-1 block">PRO (g)</label><input type="number" inputMode="decimal" value={newIngredient.protein} onChange={(e)=>setNewIngredient({...newIngredient, protein: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-rose-500 text-center text-xs sm:text-sm" /></div>
-                      <div><label className="text-[9px] sm:text-[10px] font-bold text-cyan-400 mb-1 block">CARBS (g)</label><input type="number" inputMode="decimal" value={newIngredient.carbs} onChange={(e)=>setNewIngredient({...newIngredient, carbs: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-cyan-500 text-center text-xs sm:text-sm" /></div>
-                      <div><label className="text-[9px] sm:text-[10px] font-bold text-yellow-400 mb-1 block">FAT (g)</label><input type="number" inputMode="decimal" value={newIngredient.fat} onChange={(e)=>setNewIngredient({...newIngredient, fat: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-yellow-500 text-center text-xs sm:text-sm" /></div>
-                    </div>
-                    <button onClick={saveIngredient} className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-orange-600 transition-colors text-xs sm:text-sm">{editingIngredientId ? 'UPDATE INGREDIENT' : 'SAVE INGREDIENT'}</button>
+          {mainTab === 'nutrition' && subTabs.nutrition === 'ingredients' && (() => {
+            const ingredientBuilderNode = (
+              <div className="bg-slate-900 border border-orange-500 p-5 rounded-[2rem] shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+                 <button onClick={() => { setShowAddIngredient(false); setEditingIngredientId(null); setNewIngredient({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' }); }} className="absolute top-4 right-4 sm:top-5 sm:right-5 text-slate-500 hover:text-white"><X size={20}/></button>
+                 <h3 className="text-lg sm:text-xl font-bold text-white mb-5 pr-8">{editingIngredientId ? 'Edit Ingredient' : 'Custom Ingredient'}</h3>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+                    <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">FOOD NAME</label><input type="text" maxLength={50} value={newIngredient.name} onChange={(e)=>setNewIngredient({...newIngredient, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm" placeholder="e.g. Bangus" /></div>
+                    <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">CATEGORY</label><select value={newIngredient.category} onChange={(e)=>setNewIngredient({...newIngredient, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm"><option>Proteins</option><option>Carbs</option><option>Fats</option><option>Spices</option><option>Sauces</option></select></div>
                   </div>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
+                    <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">BASE QUANTITY</label><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.baseQuantity} onChange={(e)=>setNewIngredient({...newIngredient, baseQuantity: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm" placeholder="100" /></div>
+                    <div><label className="text-[10px] sm:text-xs font-bold text-slate-500 mb-1 block">UNIT</label><input type="text" maxLength={20} value={newIngredient.unit} onChange={(e)=>setNewIngredient({...newIngredient, unit: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-orange-500 text-xs sm:text-sm" placeholder="g, ml, cup" /></div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+                    <div><label className="text-[9px] sm:text-[10px] font-bold text-rose-400 mb-1 block">PRO (g)</label><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.protein} onChange={(e)=>setNewIngredient({...newIngredient, protein: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-rose-500 text-center text-xs sm:text-sm" /></div>
+                    <div><label className="text-[9px] sm:text-[10px] font-bold text-cyan-400 mb-1 block">CARBS (g)</label><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.carbs} onChange={(e)=>setNewIngredient({...newIngredient, carbs: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-cyan-500 text-center text-xs sm:text-sm" /></div>
+                    <div><label className="text-[9px] sm:text-[10px] font-bold text-yellow-400 mb-1 block">FAT (g)</label><input type="number" inputMode="decimal" min={0} max={9999} value={newIngredient.fat} onChange={(e)=>setNewIngredient({...newIngredient, fat: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 sm:p-3 text-white focus:outline-none focus:border-yellow-500 text-center text-xs sm:text-sm" /></div>
+                  </div>
+                  <button onClick={saveIngredient} className="w-full bg-orange-500 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-orange-600 transition-colors text-xs sm:text-sm">{editingIngredientId ? 'UPDATE INGREDIENT' : 'SAVE INGREDIENT'}</button>
+              </div>
+            );
+
+            return (
+              <div className="animate-in fade-in duration-500 space-y-6">
+                <div className="flex justify-between items-end mb-4"><div><h2 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2 sm:gap-3"><Apple className="text-orange-400" size={28} /> Database</h2></div></div>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full">
+                  {ingredientCategories.map(cat => (
+                    <button key={cat} onClick={() => setActiveIngredientFilter(cat)} className={`px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs sm:text-sm whitespace-nowrap transition-colors ${activeIngredientFilter === cat ? 'bg-orange-500 text-white shadow-lg' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>{cat}</button>
+                  ))}
+                </div>
+
+                {!showAddIngredient && !editingIngredientId && (
+                  <button onClick={() => { setShowAddIngredient(true); setEditingIngredientId(null); setNewIngredient({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' }); }} className="w-full bg-slate-900 border-2 border-dashed border-slate-700 hover:border-orange-400 text-orange-400 py-6 rounded-3xl font-bold flex flex-col items-center justify-center gap-2 transition-colors group"><Plus size={32} className="group-hover:scale-110 transition-transform" /> Add Custom Food</button>
                 )}
+
+                {showAddIngredient && !editingIngredientId && ingredientBuilderNode}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-4 mt-6">
+                  {filteredIngredients.map((item) => {
+                    if (editingIngredientId === item.id) {
+                      return <div key={item.id} className="col-span-1 sm:col-span-2">{ingredientBuilderNode}</div>;
+                    }
+                    return (
+                      <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-3xl flex flex-col justify-between group hover:border-orange-500/50 cursor-pointer transition-colors overflow-hidden" onClick={() => editIngredient(item)}>
+                        <div className="p-5 flex justify-between items-start group-hover:bg-slate-800/30 transition-colors">
+                          <div className="min-w-0 pr-2">
+                            <h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate group-hover:text-orange-400 transition-colors">{item.name}</h4>
+                            <p className="text-[10px] sm:text-xs text-slate-400 font-medium mb-1 mt-1">Per {item.baseQuantity} {item.unit}</p>
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${getCategoryColor(item.category)}`}>{item.category}</span>
+                          </div>
+                          <Edit3 size={18} className="text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
+                        </div>
+                        <div className="px-5 pb-4 flex gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold mt-1 flex-wrap group-hover:bg-slate-800/30 transition-colors">
+                          <span className="text-amber-400">{item.calories} kcal</span>
+                          <span className="text-rose-400">P: {item.protein}g</span>
+                          <span className="text-cyan-400">C: {item.carbs}g</span>
+                          <span className="text-yellow-400">F: {item.fat}g</span>
+                        </div>
+                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                           <button onClick={() => deleteIngredient(item.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-[10px] font-bold transition-colors px-2 py-1"><Trash2 size={14} /> Delete</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pb-4">
-                {filteredIngredients.map((item) => (
-                  <div key={item.id} className="bg-slate-900 border border-slate-800 p-3 sm:p-4 rounded-2xl flex flex-col justify-between group hover:border-orange-500/50 transition-colors relative">
-                        <div className="flex justify-between items-start mb-2 gap-2"><div className="min-w-0"><h4 className="font-bold text-white text-sm sm:text-base leading-tight truncate">{item.name}</h4><p className="text-[10px] sm:text-xs text-slate-400 font-medium mb-1">Per {item.baseQuantity} {item.unit}</p><span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${getCategoryColor(item.category)}`}>{item.category}</span></div><div className="flex gap-1 sm:gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0"><button onClick={() => editIngredient(item)} className="p-2 sm:p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"><Edit3 size={16}/></button><button onClick={() => deleteIngredient(item.id)} className="p-2 sm:p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-slate-500 hover:text-red-400 bg-slate-800 hover:bg-red-500/20 rounded-lg transition-colors"><Trash2 size={16}/></button></div></div>
-                    <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold mt-1 flex-wrap">
-                      <span className="text-amber-400">{item.calories} kcal</span>
-                      <span className="text-rose-400">P: {item.protein}g</span>
-                      <span className="text-cyan-400">C: {item.carbs}g</span>
-                      <span className="text-yellow-400">F: {item.fat}g</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ==================== HISTORY HUB ==================== */}
           {mainTab === 'progress' && (
