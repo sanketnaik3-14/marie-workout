@@ -163,13 +163,18 @@ export default function GirlfriendFitnessApp() {
   }, [age, weight, height, neck, waist, hip, activityLevel, proteinPerKg, fatPerKg, caloricSurplus]);
 
   const saveProfile = async () => {
-    const profileData = {
-      age, weight, height, neck, waist, hip,
-      activityLevel, proteinPerKg, fatPerKg, caloricSurplus,
-      calcResults
-    };
-    if (!isMock) await setDoc(getDocRef('settings', 'profile'), profileData);
-    showNotification("Profile & Macro Goals Saved!");
+    try {
+      const profileData = {
+        age, weight, height, neck, waist, hip,
+        activityLevel, proteinPerKg, fatPerKg, caloricSurplus,
+        calcResults
+      };
+      if (!isMock) await setDoc(getDocRef('settings', 'profile'), profileData);
+      showNotification("Profile & Macro Goals Saved!");
+    } catch (err) {
+      console.error(err);
+      showNotification("Error saving profile.");
+    }
   };
 
   // --- FIREBASE AUTH LOGIC ---
@@ -351,18 +356,23 @@ export default function GirlfriendFitnessApp() {
   const filteredIngredients = activeIngredientFilter === 'All' ? ingredients : ingredients.filter(i => i.category === activeIngredientFilter);
 
   const saveIngredient = async () => {
-    if (!newIngredient.name || newIngredient.protein === '' || newIngredient.carbs === '' || newIngredient.fat === '') return showNotification("Fill all fields.");
-    const addedItem = {
-      id: editingIngredientId || `i${Date.now()}`, name: newIngredient.name, category: newIngredient.category,
-      baseQuantity: parseFloat(newIngredient.baseQuantity), unit: newIngredient.unit,
-      protein: parseFloat(newIngredient.protein), carbs: parseFloat(newIngredient.carbs), fat: parseFloat(newIngredient.fat), 
-      calories: Math.round((parseFloat(newIngredient.protein) * 4) + (parseFloat(newIngredient.carbs) * 4) + (parseFloat(newIngredient.fat) * 9))
-    };
-    if (!isMock) await setDoc(getDocRef('ingredients', addedItem.id), addedItem);
-    else editingIngredientId ? setIngredients(ingredients.map(i => i.id === editingIngredientId ? addedItem : i)) : setIngredients([addedItem, ...ingredients]);
-    
-    setNewIngredient({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' });
-    setShowAddIngredient(false); setEditingIngredientId(null); showNotification(`${addedItem.name} saved!`);
+    try {
+      if (!newIngredient.name || newIngredient.protein === '' || newIngredient.carbs === '' || newIngredient.fat === '') return showNotification("Fill all fields.");
+      const addedItem = {
+        id: editingIngredientId || `i${Date.now()}`, name: newIngredient.name, category: newIngredient.category,
+        baseQuantity: parseFloat(newIngredient.baseQuantity) || 100, unit: newIngredient.unit || 'g',
+        protein: parseFloat(newIngredient.protein) || 0, carbs: parseFloat(newIngredient.carbs) || 0, fat: parseFloat(newIngredient.fat) || 0, 
+        calories: Math.round((parseFloat(newIngredient.protein || 0) * 4) + (parseFloat(newIngredient.carbs || 0) * 4) + (parseFloat(newIngredient.fat || 0) * 9)) || 0
+      };
+      if (!isMock) await setDoc(getDocRef('ingredients', addedItem.id), addedItem);
+      else editingIngredientId ? setIngredients(ingredients.map(i => i.id === editingIngredientId ? addedItem : i)) : setIngredients([addedItem, ...ingredients]);
+      
+      setNewIngredient({ name: '', category: 'Proteins', baseQuantity: 100, unit: 'g', protein: '', carbs: '', fat: '' });
+      setShowAddIngredient(false); setEditingIngredientId(null); showNotification(`${addedItem.name} saved!`);
+    } catch (err) {
+      console.error(err);
+      showNotification("Error saving ingredient.");
+    }
   };
 
   const editIngredient = (item) => {
@@ -371,9 +381,14 @@ export default function GirlfriendFitnessApp() {
   };
 
   const deleteIngredient = async (id) => {
-    if (!isMock) await deleteDoc(getDocRef('ingredients', id));
-    else setIngredients(ingredients.filter(i => i.id !== id));
-    showNotification("Ingredient deleted.");
+    try {
+      if (!isMock) await deleteDoc(getDocRef('ingredients', id));
+      else setIngredients(ingredients.filter(i => i.id !== id));
+      showNotification("Ingredient deleted.");
+    } catch (err) {
+      console.error(err);
+      showNotification("Error deleting ingredient.");
+    }
   };
 
   const [isCreatingRecipe, setIsCreatingRecipe] = useState(false);
@@ -385,8 +400,11 @@ export default function GirlfriendFitnessApp() {
     if (!qty || qty <= 0) return;
     const ratio = qty / ing.baseQuantity;
     const newItem = {
-      id: ing.id, name: ing.name, qty: parseFloat(qty), unit: ing.unit, calories: Math.round(ing.calories * ratio),
-      protein: Math.round(ing.protein * ratio * 10)/10, carbs: Math.round(ing.carbs * ratio * 10)/10, fat: Math.round(ing.fat * ratio * 10)/10
+      id: ing.id, name: ing.name, qty: parseFloat(qty) || 0, unit: ing.unit, 
+      calories: Math.round(ing.calories * ratio) || 0,
+      protein: Math.round(ing.protein * ratio * 10)/10 || 0, 
+      carbs: Math.round(ing.carbs * ratio * 10)/10 || 0, 
+      fat: Math.round(ing.fat * ratio * 10)/10 || 0
     };
     setDraftRecipeItems([...draftRecipeItems, newItem]);
   };
@@ -394,22 +412,32 @@ export default function GirlfriendFitnessApp() {
   const recipeDraftTotals = draftRecipeItems.reduce((acc, curr) => ({ calories: acc.calories + curr.calories, protein: acc.protein + curr.protein, carbs: acc.carbs + curr.carbs, fat: acc.fat + curr.fat }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
   const saveRecipe = async () => {
-    if (!draftRecipeName || draftRecipeItems.length === 0) return showNotification("Need a name and ingredients!");
-    const newRecipe = {
-      id: editingRecipeId || `r${Date.now()}`, name: draftRecipeName, baseQuantity: 1, unit: "Serving",
-      calories: Math.round(recipeDraftTotals.calories), protein: Math.round(recipeDraftTotals.protein),
-      carbs: Math.round(recipeDraftTotals.carbs), fat: Math.round(recipeDraftTotals.fat), items: draftRecipeItems
-    };
-    if (!isMock) await setDoc(getDocRef('recipes', newRecipe.id), newRecipe);
-    else editingRecipeId ? setRecipes(recipes.map(r => r.id === editingRecipeId ? newRecipe : r)) : setRecipes([newRecipe, ...recipes]);
-    
-    setIsCreatingRecipe(false); setEditingRecipeId(null); setDraftRecipeName(''); setDraftRecipeItems([]); showNotification(`Recipe saved!`);
+    try {
+      if (!draftRecipeName || draftRecipeItems.length === 0) return showNotification("Need a name and ingredients!");
+      const newRecipe = {
+        id: editingRecipeId || `r${Date.now()}`, name: draftRecipeName, baseQuantity: 1, unit: "Serving",
+        calories: Math.round(recipeDraftTotals.calories) || 0, protein: Math.round(recipeDraftTotals.protein) || 0,
+        carbs: Math.round(recipeDraftTotals.carbs) || 0, fat: Math.round(recipeDraftTotals.fat) || 0, items: draftRecipeItems
+      };
+      if (!isMock) await setDoc(getDocRef('recipes', newRecipe.id), newRecipe);
+      else editingRecipeId ? setRecipes(recipes.map(r => r.id === editingRecipeId ? newRecipe : r)) : setRecipes([newRecipe, ...recipes]);
+      
+      setIsCreatingRecipe(false); setEditingRecipeId(null); setDraftRecipeName(''); setDraftRecipeItems([]); showNotification(`Recipe saved!`);
+    } catch (err) {
+      console.error(err);
+      showNotification("Error saving recipe.");
+    }
   };
 
   const deleteRecipe = async (id) => {
-    if (!isMock) await deleteDoc(getDocRef('recipes', id));
-    else setRecipes(recipes.filter(r => r.id !== id));
-    showNotification("Recipe deleted.");
+    try {
+      if (!isMock) await deleteDoc(getDocRef('recipes', id));
+      else setRecipes(recipes.filter(r => r.id !== id));
+      showNotification("Recipe deleted.");
+    } catch (err) {
+      console.error(err);
+      showNotification("Error deleting recipe.");
+    }
   };
 
   const editRecipe = (recipe) => {
@@ -435,8 +463,10 @@ export default function GirlfriendFitnessApp() {
     if (!qty || qty <= 0) return showNotification("Enter a valid quantity");
     const ratio = qty / item.baseQuantity;
     const addedItem = {
-      id: item.id, name: item.name, qty: parseFloat(qty), unit: item.unit, calories: Math.round(item.calories * ratio), 
-      protein: Math.round(item.protein * ratio * 10)/10, carbs: Math.round(item.carbs * ratio * 10)/10, fat: Math.round(item.fat * ratio * 10)/10,
+      id: item.id, name: item.name, qty: parseFloat(qty) || 0, unit: item.unit, 
+      calories: Math.round(item.calories * ratio) || 0, 
+      protein: Math.round(item.protein * ratio * 10)/10 || 0, 
+      carbs: Math.round(item.carbs * ratio * 10)/10 || 0, fat: Math.round(item.fat * ratio * 10)/10 || 0,
     };
     setDraftMeals(draftMeals.map(m => m.id === activeAddingMealId ? { ...m, items: [...m.items, addedItem] } : m)); setActiveAddingMealId(null);
   };
@@ -451,16 +481,21 @@ export default function GirlfriendFitnessApp() {
   }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
   const saveTemplate = async () => {
-    if (!draftTemplateName) return showNotification("Give your meal plan a name!");
-    const newTemplate = {
-      id: editingTemplateId || `t${Date.now()}`, name: draftTemplateName, mealCount: draftMealCount,
-      totalCalories: Math.round(templateTotals.calories), totalProtein: Math.round(templateTotals.protein),
-      totalCarbs: Math.round(templateTotals.carbs), totalFat: Math.round(templateTotals.fat), meals: draftMeals
-    };
-    if (!isMock) await setDoc(getDocRef('mealTemplates', newTemplate.id), newTemplate);
-    else editingTemplateId ? setMealTemplates(mealTemplates.map(t => t.id === editingTemplateId ? newTemplate : t)) : setMealTemplates([...mealTemplates, newTemplate]);
-    
-    setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); showNotification(`Template saved!`);
+    try {
+      if (!draftTemplateName) return showNotification("Give your meal plan a name!");
+      const newTemplate = {
+        id: editingTemplateId || `t${Date.now()}`, name: draftTemplateName, mealCount: draftMealCount,
+        totalCalories: Math.round(templateTotals.calories) || 0, totalProtein: Math.round(templateTotals.protein) || 0,
+        totalCarbs: Math.round(templateTotals.carbs) || 0, totalFat: Math.round(templateTotals.fat) || 0, meals: draftMeals
+      };
+      if (!isMock) await setDoc(getDocRef('mealTemplates', newTemplate.id), newTemplate);
+      else editingTemplateId ? setMealTemplates(mealTemplates.map(t => t.id === editingTemplateId ? newTemplate : t)) : setMealTemplates([...mealTemplates, newTemplate]);
+      
+      setIsCreatingTemplate(false); setEditingTemplateId(null); setDraftTemplateName(''); setDraftMeals([]); showNotification(`Template saved!`);
+    } catch (err) {
+      console.error(err);
+      showNotification("Error saving template.");
+    }
   };
 
   const editTemplate = (template) => {
@@ -468,14 +503,19 @@ export default function GirlfriendFitnessApp() {
   };
 
   const deleteTemplate = async (id) => {
-    if (!isMock) await deleteDoc(getDocRef('mealTemplates', id));
-    else setMealTemplates(mealTemplates.filter(t => t.id !== id));
-    
-    const newAssigned = {...assignedMeals};
-    Object.keys(newAssigned).forEach(k => { if(newAssigned[k] === id) newAssigned[k] = null; });
-    if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: newAssigned, workouts: assignedWorkouts });
-    else setAssignedMeals(newAssigned);
-    showNotification("Meal plan deleted.");
+    try {
+      if (!isMock) await deleteDoc(getDocRef('mealTemplates', id));
+      else setMealTemplates(mealTemplates.filter(t => t.id !== id));
+      
+      const newAssigned = {...assignedMeals};
+      Object.keys(newAssigned).forEach(k => { if(newAssigned[k] === id) newAssigned[k] = null; });
+      if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: newAssigned, workouts: assignedWorkouts });
+      else setAssignedMeals(newAssigned);
+      showNotification("Meal plan deleted.");
+    } catch (err) {
+      console.error(err);
+      showNotification("Error deleting meal plan.");
+    }
   };
 
   // ============================================================================
@@ -490,14 +530,19 @@ export default function GirlfriendFitnessApp() {
   const filteredExercises = activeExerciseFilter === 'All' ? exercises : exercises.filter(e => e.target === activeExerciseFilter);
 
   const saveExercise = async () => {
-    if (!newExercise.name) return showNotification("Please enter an exercise name.");
-    const addedItem = { id: editingExerciseId || `e${Date.now()}`, ...newExercise };
-    
-    if (!isMock) await setDoc(getDocRef('exercises', addedItem.id), addedItem);
-    else editingExerciseId ? setExercises(exercises.map(e => e.id === editingExerciseId ? addedItem : e)) : setExercises([...exercises, addedItem]);
-
-    setNewExercise({ name: '', target: 'Legs & Glutes', equipment: 'Dumbbell' });
-    setShowAddExercise(false); setEditingExerciseId(null); showNotification(`${addedItem.name} saved!`);
+    try {
+      if (!newExercise.name) return showNotification("Please enter an exercise name.");
+      const addedItem = { id: editingExerciseId || `e${Date.now()}`, ...newExercise };
+      
+      if (!isMock) await setDoc(getDocRef('exercises', addedItem.id), addedItem);
+      else editingExerciseId ? setExercises(exercises.map(e => e.id === editingExerciseId ? addedItem : e)) : setExercises([...exercises, addedItem]);
+  
+      setNewExercise({ name: '', target: 'Legs & Glutes', equipment: 'Dumbbell' });
+      setShowAddExercise(false); setEditingExerciseId(null); showNotification(`${addedItem.name} saved!`);
+    } catch (err) {
+      console.error(err);
+      showNotification("Error saving exercise.");
+    }
   };
 
   const editExercise = (item) => {
@@ -506,9 +551,14 @@ export default function GirlfriendFitnessApp() {
   };
 
   const deleteExercise = async (id) => {
-    if (!isMock) await deleteDoc(getDocRef('exercises', id));
-    else setExercises(exercises.filter(e => e.id !== id));
-    showNotification("Exercise deleted.");
+    try {
+      if (!isMock) await deleteDoc(getDocRef('exercises', id));
+      else setExercises(exercises.filter(e => e.id !== id));
+      showNotification("Exercise deleted.");
+    } catch (err) {
+      console.error(err);
+      showNotification("Error deleting exercise.");
+    }
   };
 
   const [isCreatingRoutine, setIsCreatingRoutine] = useState(false);
@@ -530,16 +580,21 @@ export default function GirlfriendFitnessApp() {
   };
 
   const saveRoutine = async () => {
-    if (!draftRoutineName) return showNotification("Give your routine a name!");
-    const newRoutine = {
-      id: editingRoutineId || `wt${Date.now()}`, title: draftRoutineName, isRest: draftRoutineIsRest, exercises: draftRoutineIsRest ? [] : draftRoutineExercises
-    };
-    
-    if (!isMock) await setDoc(getDocRef('workoutTemplates', newRoutine.id), newRoutine);
-    else editingRoutineId ? setWorkoutTemplates(workoutTemplates.map(t => t.id === editingRoutineId ? newRoutine : t)) : setWorkoutTemplates([...workoutTemplates, newRoutine]);
-    
-    setIsCreatingRoutine(false); setEditingRoutineId(null); setDraftRoutineName(''); setDraftRoutineExercises([]); setDraftRoutineIsRest(false);
-    showNotification(`Routine saved!`);
+    try {
+      if (!draftRoutineName) return showNotification("Give your routine a name!");
+      const newRoutine = {
+        id: editingRoutineId || `wt${Date.now()}`, title: draftRoutineName, isRest: draftRoutineIsRest, exercises: draftRoutineIsRest ? [] : draftRoutineExercises
+      };
+      
+      if (!isMock) await setDoc(getDocRef('workoutTemplates', newRoutine.id), newRoutine);
+      else editingRoutineId ? setWorkoutTemplates(workoutTemplates.map(t => t.id === editingRoutineId ? newRoutine : t)) : setWorkoutTemplates([...workoutTemplates, newRoutine]);
+      
+      setIsCreatingRoutine(false); setEditingRoutineId(null); setDraftRoutineName(''); setDraftRoutineExercises([]); setDraftRoutineIsRest(false);
+      showNotification(`Routine saved!`);
+    } catch (err) {
+      console.error(err);
+      showNotification("Error saving routine.");
+    }
   };
 
   const editRoutine = (routine) => {
@@ -548,31 +603,46 @@ export default function GirlfriendFitnessApp() {
   };
 
   const deleteRoutine = async (id) => {
-    if (!isMock) await deleteDoc(getDocRef('workoutTemplates', id));
-    else setWorkoutTemplates(workoutTemplates.filter(t => t.id !== id));
-    
-    const newAssigned = {...assignedWorkouts};
-    Object.keys(newAssigned).forEach(k => { if(newAssigned[k] === id) newAssigned[k] = null; });
-    if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: assignedMeals, workouts: newAssigned });
-    else setAssignedWorkouts(newAssigned);
-    showNotification("Routine deleted.");
+    try {
+      if (!isMock) await deleteDoc(getDocRef('workoutTemplates', id));
+      else setWorkoutTemplates(workoutTemplates.filter(t => t.id !== id));
+      
+      const newAssigned = {...assignedWorkouts};
+      Object.keys(newAssigned).forEach(k => { if(newAssigned[k] === id) newAssigned[k] = null; });
+      if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: assignedMeals, workouts: newAssigned });
+      else setAssignedWorkouts(newAssigned);
+      showNotification("Routine deleted.");
+    } catch (err) {
+      console.error(err);
+      showNotification("Error deleting routine.");
+    }
   };
 
   // ============================================================================
   // --- CLOUD CRUD: UNIFIED SCHEDULE ASSIGNER ---
   // ============================================================================
   const assignMealToDay = async (day, templateId) => {
-    const newMeals = { ...assignedMeals, [day]: templateId };
-    if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: newMeals, workouts: assignedWorkouts });
-    else setAssignedMeals(newMeals);
-    showNotification(`Meal plan assigned to ${day}`);
+    try {
+      const newMeals = { ...assignedMeals, [day]: templateId };
+      if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: newMeals, workouts: assignedWorkouts });
+      else setAssignedMeals(newMeals);
+      showNotification(`Meal plan assigned to ${day}`);
+    } catch (err) {
+      console.error(err);
+      showNotification("Error assigning meal plan.");
+    }
   };
 
   const assignWorkoutToDay = async (day, templateId) => {
-    const newWorkouts = { ...assignedWorkouts, [day]: templateId };
-    if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: assignedMeals, workouts: newWorkouts });
-    else setAssignedWorkouts(newWorkouts);
-    showNotification(`Workout assigned to ${day}`);
+    try {
+      const newWorkouts = { ...assignedWorkouts, [day]: templateId };
+      if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: assignedMeals, workouts: newWorkouts });
+      else setAssignedWorkouts(newWorkouts);
+      showNotification(`Workout assigned to ${day}`);
+    } catch (err) {
+      console.error(err);
+      showNotification("Error assigning workout.");
+    }
   };
 
   // ============================================================================
@@ -580,21 +650,31 @@ export default function GirlfriendFitnessApp() {
   // ============================================================================
   const [activeExtraAdd, setActiveExtraAdd] = useState(false);
   const addExtraToToday = async (item, qty) => {
-    if (!qty || qty <= 0) return showNotification("Enter a valid quantity");
-    const ratio = qty / item.baseQuantity;
-    const addedItem = {
-      id: `ext${Date.now()}`, name: `${item.name} (${qty}${item.unit})`,
-      calories: Math.round(item.calories * ratio), protein: Math.round(item.protein * ratio * 10)/10,
-      carbs: Math.round(item.carbs * ratio * 10)/10, fat: Math.round(item.fat * ratio * 10)/10,
-    };
-    if (!isMock) await setDoc(getDocRef('dailyExtras', addedItem.id), addedItem);
-    else setDailyExtras([...dailyExtras, addedItem]);
-    setActiveExtraAdd(false); showNotification("Added extra food to today's log.");
+    try {
+      if (!qty || qty <= 0) return showNotification("Enter a valid quantity");
+      const ratio = qty / item.baseQuantity;
+      const addedItem = {
+        id: `ext${Date.now()}`, name: `${item.name} (${qty}${item.unit})`,
+        calories: Math.round(item.calories * ratio) || 0, protein: Math.round(item.protein * ratio * 10)/10 || 0,
+        carbs: Math.round(item.carbs * ratio * 10)/10 || 0, fat: Math.round(item.fat * ratio * 10)/10 || 0,
+      };
+      if (!isMock) await setDoc(getDocRef('dailyExtras', addedItem.id), addedItem);
+      else setDailyExtras([...dailyExtras, addedItem]);
+      setActiveExtraAdd(false); showNotification("Added extra food to today's log.");
+    } catch (err) {
+      console.error(err);
+      showNotification("Error adding extra.");
+    }
   };
 
   const removeExtra = async (id) => {
-    if (!isMock) await deleteDoc(getDocRef('dailyExtras', id));
-    else setDailyExtras(dailyExtras.filter(e => e.id !== id));
+    try {
+      if (!isMock) await deleteDoc(getDocRef('dailyExtras', id));
+      else setDailyExtras(dailyExtras.filter(e => e.id !== id));
+    } catch (err) {
+      console.error(err);
+      showNotification("Error removing extra.");
+    }
   };
 
   // ============================================================================
@@ -603,26 +683,36 @@ export default function GirlfriendFitnessApp() {
   const [progressView, setProgressView] = useState('overview'); 
 
   const deleteWorkoutLog = async (id) => {
-    if (!isMock) await deleteDoc(getDocRef('workoutHistory', id));
-    else setMockWorkoutHistory(mockWorkoutHistory.filter(h => h.id !== id));
-    showNotification("Workout log deleted.");
+    try {
+      if (!isMock) await deleteDoc(getDocRef('workoutHistory', id));
+      else setMockWorkoutHistory(mockWorkoutHistory.filter(h => h.id !== id));
+      showNotification("Workout log deleted.");
+    } catch (err) {
+      console.error(err);
+      showNotification("Error deleting workout log.");
+    }
   };
 
   const deleteMeasurementLog = async (id) => {
-    if (!isMock) {
-      const logToDelete = mockMeasurementHistory.find(h => h.id === id);
-      await deleteDoc(getDocRef('measurementHistory', id));
-      if (logToDelete?.photoUrl) {
-        try {
-          const storage = getStorage(app);
-          const appId = typeof __app_id !== 'undefined' ? __app_id : 'island-gains';
-          await deleteObject(ref(storage, `artifacts/${appId}/users/${user?.uid}/progress/${id}`));
-        } catch (err) { console.warn("Failed to delete orphaned photo:", err); }
+    try {
+      if (!isMock) {
+        const logToDelete = mockMeasurementHistory.find(h => h.id === id);
+        await deleteDoc(getDocRef('measurementHistory', id));
+        if (logToDelete?.photoUrl) {
+          try {
+            const storage = getStorage(app);
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'island-gains';
+            await deleteObject(ref(storage, `artifacts/${appId}/users/${user?.uid}/progress/${id}`));
+          } catch (err) { console.warn("Failed to delete orphaned photo:", err); }
+        }
+      } else {
+        setMockMeasurementHistory(mockMeasurementHistory.filter(h => h.id !== id));
       }
-    } else {
-      setMockMeasurementHistory(mockMeasurementHistory.filter(h => h.id !== id));
+      showNotification("Measurement entry deleted.");
+    } catch (err) {
+      console.error(err);
+      showNotification("Error deleting measurement.");
     }
-    showNotification("Measurement entry deleted.");
   };
 
   const groupedHistory = mockWorkoutHistory.reduce((acc, log) => {
@@ -644,36 +734,41 @@ export default function GirlfriendFitnessApp() {
   };
 
   const saveWeeklyProgress = async () => {
-    if (!trackWeight) return showNotification("Please enter at least your weight!");
-    const logId = Date.now().toString();
-    const now = new Date();
-    const dateStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    let photoUrl = null;
-    
-    if (!isMock && photoFile) {
-      try {
-        showNotification("Uploading photo...");
-        const storage = getStorage(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'island-gains';
-        const photoRef = ref(storage, `artifacts/${appId}/users/${user?.uid}/progress/${logId}`);
-        await uploadBytes(photoRef, photoFile);
-        photoUrl = await getDownloadURL(photoRef);
-      } catch (err) {
-        console.error("Photo upload failed:", err);
-        showNotification("Failed to upload photo, but saving metrics.");
+    try {
+      if (!trackWeight) return showNotification("Please enter at least your weight!");
+      const logId = Date.now().toString();
+      const now = new Date();
+      const dateStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      let photoUrl = null;
+      
+      if (!isMock && photoFile) {
+        try {
+          showNotification("Uploading photo...");
+          const storage = getStorage(app);
+          const appId = typeof __app_id !== 'undefined' ? __app_id : 'island-gains';
+          const photoRef = ref(storage, `artifacts/${appId}/users/${user?.uid}/progress/${logId}`);
+          await uploadBytes(photoRef, photoFile);
+          photoUrl = await getDownloadURL(photoRef);
+        } catch (err) {
+          console.error("Photo upload failed:", err);
+          showNotification("Failed to upload photo, but saving metrics.");
+        }
       }
+  
+      const newLog = {
+        id: logId, date: dateStr, weight: parseFloat(trackWeight) || 0, hasPhoto: !!photoFile, photoUrl,
+        waist: trackWaist ? parseFloat(trackWaist) : null, hip: trackHip ? parseFloat(trackHip) : null, arm: trackArm ? parseFloat(trackArm) : null,
+      };
+      
+      if (!isMock) await setDoc(getDocRef('measurementHistory', logId), newLog);
+      else setMockMeasurementHistory([newLog, ...mockMeasurementHistory]);
+      
+      showNotification("Progress saved to cloud successfully!");
+      setPhotoPreview(null); setPhotoFile(null); setTrackWeight(''); setTrackWaist(''); setTrackHip(''); setTrackArm('');
+    } catch (err) {
+      console.error(err);
+      showNotification("Error saving progress.");
     }
-
-    const newLog = {
-      id: logId, date: dateStr, weight: parseFloat(trackWeight), hasPhoto: !!photoFile, photoUrl,
-      waist: trackWaist ? parseFloat(trackWaist) : null, hip: trackHip ? parseFloat(trackHip) : null, arm: trackArm ? parseFloat(trackArm) : null,
-    };
-    
-    if (!isMock) await setDoc(getDocRef('measurementHistory', logId), newLog);
-    else setMockMeasurementHistory([newLog, ...mockMeasurementHistory]);
-    
-    showNotification("Progress saved to cloud successfully!");
-    setPhotoPreview(null); setPhotoFile(null); setTrackWeight(''); setTrackWaist(''); setTrackHip(''); setTrackArm('');
   };
 
   // ============================================================================
@@ -691,36 +786,45 @@ export default function GirlfriendFitnessApp() {
   const handleWorkoutInput = (exerciseName, setIndex, field, value) => {
     const newInputs = { ...workoutInputs };
     if (!newInputs[exerciseName]) newInputs[exerciseName] = [];
+    else newInputs[exerciseName] = [...newInputs[exerciseName]];
+    
     if (!newInputs[exerciseName][setIndex]) newInputs[exerciseName][setIndex] = { weight: '', reps: '' };
+    else newInputs[exerciseName][setIndex] = { ...newInputs[exerciseName][setIndex] };
+    
     newInputs[exerciseName][setIndex][field] = value;
     setWorkoutInputs(newInputs);
   };
 
   const saveWorkoutSession = async () => {
-    const now = new Date();
-    const dateStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    let loggedSomething = false;
-    
-    for (const exercise of selectedWorkout.exercises) {
-      const sets = workoutInputs[exercise.name];
-      if (sets && sets.length > 0) {
-        const validSets = sets.filter(s => s && (s.weight || s.reps));
-        if (validSets.length > 0) {
-           const logItem = {
-             id: `${dateStr}-${exercise.name.replace(/\s+/g, '')}`,
-             date: dateStr, day: selectedDay, exercise: exercise.name,
-             sets: validSets.map((s, i) => ({ set: i+1, weight: s.weight||0, reps: s.reps||0 }))
-           };
-           if (!isMock) await setDoc(getDocRef('workoutHistory', logItem.id), logItem);
-           else setMockWorkoutHistory(prev => [...prev.filter(p => p.id !== logItem.id), logItem]);
-           loggedSomething = true;
+    try {
+      const now = new Date();
+      const dateStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      let loggedSomething = false;
+      
+      for (const exercise of selectedWorkout.exercises) {
+        const sets = workoutInputs[exercise.name];
+        if (sets && sets.length > 0) {
+          const validSets = sets.filter(s => s && (s.weight || s.reps));
+          if (validSets.length > 0) {
+             const logItem = {
+               id: `${dateStr}-${exercise.name.replace(/\s+/g, '')}`,
+               date: dateStr, day: selectedDay, exercise: exercise.name,
+               sets: validSets.map((s, i) => ({ set: i+1, weight: Number(s.weight) || 0, reps: Number(s.reps) || 0 }))
+             };
+             if (!isMock) await setDoc(getDocRef('workoutHistory', logItem.id), logItem);
+             else setMockWorkoutHistory(prev => [...prev.filter(p => p.id !== logItem.id), logItem]);
+             loggedSomething = true;
+          }
         }
       }
+      if (loggedSomething) {
+          showNotification(`${selectedDay} cloud session saved!`);
+          setWorkoutInputs({});
+      } else showNotification("Please enter some weights/reps first.");
+    } catch (err) {
+      console.error(err);
+      showNotification("Error saving workout session.");
     }
-    if (loggedSomething) {
-        showNotification(`${selectedDay} cloud session saved!`);
-        setWorkoutInputs({});
-    } else showNotification("Please enter some weights/reps first.");
   };
 
   // Dynamic Diet Selection
