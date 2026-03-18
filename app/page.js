@@ -639,7 +639,7 @@ export default function GirlfriendFitnessApp() {
       const newMeals = { ...assignedMeals, [day]: templateId };
       if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: newMeals, workouts: assignedWorkouts });
       else setAssignedMeals(newMeals);
-      showNotification(`Meal plan assigned to ${day}`);
+      showNotification(templateId ? `Meal plan assigned to ${day}` : `Plan removed from ${day}`);
     } catch (err) {
       console.error(err);
       showNotification("Error assigning meal plan.");
@@ -651,7 +651,7 @@ export default function GirlfriendFitnessApp() {
       const newWorkouts = { ...assignedWorkouts, [day]: templateId };
       if (!isMock) await setDoc(getDocRef('settings', 'schedule'), { meals: assignedMeals, workouts: newWorkouts });
       else setAssignedWorkouts(newWorkouts);
-      showNotification(`Workout assigned to ${day}`);
+      showNotification(templateId ? `Workout assigned to ${day}` : `Workout removed from ${day}`);
     } catch (err) {
       console.error(err);
       showNotification("Error assigning workout.");
@@ -763,11 +763,9 @@ export default function GirlfriendFitnessApp() {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const actualToday = days[new Date().getDay()];
   const [selectedDay, setSelectedDay] = useState(actualToday);
-  const [isEditingSchedule, setIsEditingSchedule] = useState(false);
 
   const handleDaySelect = (day) => {
     setSelectedDay(day);
-    setIsEditingSchedule(false);
   };
 
   // Dynamic Workout Selection
@@ -983,34 +981,18 @@ export default function GirlfriendFitnessApp() {
                   <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                     <CalendarDays size={16} className="text-indigo-400" /> {selectedDay}'s Schedule
                   </h3>
-                  <button onClick={() => setIsEditingSchedule(!isEditingSchedule)} className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 ${isEditingSchedule ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
-                    {isEditingSchedule ? <><CheckCircle2 size={14} /> Done</> : <><Edit3 size={14} /> Edit</>}
-                  </button>
                 </div>
 
-                {!isEditingSchedule ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex items-center gap-3">
-                       <div className="bg-cyan-500/10 p-2 sm:p-3 rounded-xl"><Activity className="text-cyan-400" size={20}/></div>
-                       <div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Workout</p><p className="text-sm font-bold text-white truncate">{assignedWorkouts[selectedDay] ? workoutTemplates.find(t=>t.id===assignedWorkouts[selectedDay])?.title : 'Rest Day'}</p></div>
-                     </div>
-                     <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex items-center gap-3">
-                       <div className="bg-rose-500/10 p-2 sm:p-3 rounded-xl"><Utensils className="text-rose-400" size={20}/></div>
-                       <div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Diet</p><p className="text-sm font-bold text-white truncate">{assignedMeals[selectedDay] ? mealTemplates.find(t=>t.id===assignedMeals[selectedDay])?.name : 'Off Plan'}</p></div>
-                     </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="bg-slate-950 p-4 rounded-xl border border-cyan-500/30">
-                      <label className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1"><Activity size={12} /> Assign Workout</label>
-                      <select value={assignedWorkouts[selectedDay] || ''} onChange={(e) => assignWorkoutToDay(selectedDay, e.target.value)} className="w-full bg-slate-900 text-white text-sm font-bold p-3 rounded-lg border border-slate-700 focus:outline-none focus:border-cyan-500"><option value="">Rest Day (None)</option>{workoutTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}</select>
-                    </div>
-                    <div className="bg-slate-950 p-4 rounded-xl border border-rose-500/30">
-                      <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-2 flex items-center gap-1"><Utensils size={12} /> Assign Meal Plan</label>
-                      <select value={assignedMeals[selectedDay] || ''} onChange={(e) => assignMealToDay(selectedDay, e.target.value)} className="w-full bg-slate-900 text-white text-sm font-bold p-3 rounded-lg border border-slate-700 focus:outline-none focus:border-rose-500"><option value="">Off Plan (None)</option>{mealTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
-                    </div>
-                  </div>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                   <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex items-center gap-3">
+                     <div className="bg-cyan-500/10 p-2 sm:p-3 rounded-xl"><Activity className="text-cyan-400" size={20}/></div>
+                     <div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Workout</p><p className="text-sm font-bold text-white truncate">{assignedWorkouts[selectedDay] ? workoutTemplates.find(t=>t.id===assignedWorkouts[selectedDay])?.title : 'Rest Day'}</p></div>
+                   </div>
+                   <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex items-center gap-3">
+                     <div className="bg-rose-500/10 p-2 sm:p-3 rounded-xl"><Utensils className="text-rose-400" size={20}/></div>
+                     <div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Diet</p><p className="text-sm font-bold text-white truncate">{assignedMeals[selectedDay] ? mealTemplates.find(t=>t.id===assignedMeals[selectedDay])?.name : 'Off Plan'}</p></div>
+                   </div>
+                </div>
               </div>
 
               {/* THE DIET LOG */}
@@ -1126,8 +1108,8 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
-          {/* === NUTRITION HUB (Recipes) === */}
-          {mainTab === 'nutrition' && subTabs.nutrition === 'recipes' && (
+          {/* === WORKOUTS HUB (Routines) === */}
+          {mainTab === 'workouts' && subTabs.workouts === 'routines' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               {!isCreatingRoutine ? (
                 <>
@@ -1147,7 +1129,25 @@ export default function GirlfriendFitnessApp() {
                             </div>
                           )}
                         </div>
-                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto relative z-10"><button onClick={() => editRoutine(routine)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors px-2 py-1"><Edit3 size={14} /> Edit</button><button onClick={() => deleteRoutine(routine.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors px-2 py-1"><Trash2 size={14} /> Delete</button></div>
+                        <div className="bg-slate-800/50 p-4 border-t border-slate-800 mt-auto relative z-10">
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assign to Days</span>
+                            <div className="flex gap-2">
+                              <button onClick={() => editRoutine(routine)} className="text-slate-400 hover:text-white flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Edit3 size={14} /> Edit</button>
+                              <button onClick={() => deleteRoutine(routine.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Trash2 size={14} /> Delete</button>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 sm:gap-2">
+                            {days.map(day => {
+                              const isActive = assignedWorkouts[day] === routine.id;
+                              return (
+                                <button key={day} onClick={() => assignWorkoutToDay(day, isActive ? null : routine.id)} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20' : 'bg-slate-950 text-slate-500 hover:bg-slate-800 border border-slate-800'}`}>
+                                  {day.substring(0, 1)}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1305,7 +1305,25 @@ export default function GirlfriendFitnessApp() {
                             ))}
                           </div>
                         </div>
-                        <div className="bg-slate-800/50 p-3 border-t border-slate-800 flex justify-end gap-3 mt-auto"><button onClick={() => editTemplate(template)} className="text-slate-400 hover:text-white flex items-center gap-1 text-xs font-bold transition-colors px-2 py-1"><Edit3 size={14} /> Edit</button><button onClick={() => deleteTemplate(template.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-xs font-bold transition-colors px-2 py-1"><Trash2 size={14} /> Delete</button></div>
+                        <div className="bg-slate-800/50 p-4 border-t border-slate-800 mt-auto">
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assign to Days</span>
+                            <div className="flex gap-2">
+                              <button onClick={() => editTemplate(template)} className="text-slate-400 hover:text-white flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Edit3 size={14} /> Edit</button>
+                              <button onClick={() => deleteTemplate(template.id)} className="text-slate-400 hover:text-red-400 flex items-center gap-1 text-[10px] font-bold transition-colors p-1"><Trash2 size={14} /> Delete</button>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 sm:gap-2">
+                            {days.map(day => {
+                              const isActive = assignedMeals[day] === template.id;
+                              return (
+                                <button key={day} onClick={() => assignMealToDay(day, isActive ? null : template.id)} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'bg-slate-950 text-slate-500 hover:bg-slate-800 border border-slate-800'}`}>
+                                  {day.substring(0, 1)}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1360,8 +1378,8 @@ export default function GirlfriendFitnessApp() {
             </div>
           )}
 
-          {/* === WORKOUTS HUB (Routines) === */}
-          {mainTab === 'workouts' && subTabs.workouts === 'routines' && (
+          {/* === NUTRITION HUB (Recipes) === */}
+          {mainTab === 'nutrition' && subTabs.nutrition === 'recipes' && (
             <div className="animate-in fade-in duration-500 space-y-6">
               {!isCreatingRecipe ? (
                 <>
