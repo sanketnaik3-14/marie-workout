@@ -17,6 +17,10 @@ export const metadata = {
   description: "Marie's Personal Fitness & Nutrition Tracker",
   manifest: "/manifest.json",
   themeColor: "#0f172a",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
