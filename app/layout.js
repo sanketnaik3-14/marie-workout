@@ -15,7 +15,6 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Island Gains",
   description: "Marie's Personal Fitness & Nutrition Tracker",
-  manifest: "/manifest.json",
   themeColor: "#0f172a",
   icons: {
     icon: [

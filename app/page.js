@@ -30,10 +30,14 @@ const db = getFirestore(app);
 
 // Initialize App Check with reCAPTCHA v3 (only in the browser)
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
-    isTokenAutoRefreshEnabled: true
-  });
+  try {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch (error) {
+    console.error("Failed to initialize Firebase App Check:", error);
+  }
 }
 
 const isMock = firebaseConfig.apiKey === "mock-key"; 
