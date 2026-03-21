@@ -1042,7 +1042,7 @@ export default function GirlfriendFitnessApp() {
            <div className="px-4 py-3 border-b border-slate-800/50 flex gap-2 overflow-x-auto scrollbar-hide bg-slate-950/50">
               {SUB_TABS[mainTab].map(tab => {
                 const isActive = subTabs[mainTab] === tab.id;
-                const activeColor = mainTab === 'workouts' ? 'bg-cyan-500 text-slate-950' : mainTab === 'nutrition' ? 'bg-orange-500 text-slate-950' : mainTab === 'profile' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-white';
+                const activeColor = mainTab === 'today' ? 'bg-rose-500 text-slate-950' : mainTab === 'workouts' ? 'bg-cyan-500 text-slate-950' : mainTab === 'nutrition' ? 'bg-orange-500 text-slate-950' : mainTab === 'profile' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-white';
                 const TabIcon = tab.icon;
                 return (
                   <button key={tab.id} onClick={() => switchSubTab(mainTab, tab.id)} className={`px-5 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all flex items-center gap-2 ${isActive ? activeColor : 'bg-slate-900 text-slate-400 border border-slate-800 hover:bg-slate-800'}`}>
@@ -1174,10 +1174,10 @@ export default function GirlfriendFitnessApp() {
                     )}
                   </div>
                 </div>
-              )}
+            )}
 
-              {/* THE WORKOUT SESSION */}
-              <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
+            {subTabs.today === 'workout' && (
+              <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl animate-in slide-in-from-right-8 duration-300">
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <p className="text-cyan-400 font-bold text-sm uppercase mb-1 flex items-center gap-2"><Calendar size={16} /> {selectedDay}'s Workout</p>
@@ -1215,6 +1215,7 @@ export default function GirlfriendFitnessApp() {
                   </div>
                 )}
               </div>
+            )}
             </div>
           )}
 
