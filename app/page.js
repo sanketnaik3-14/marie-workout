@@ -302,7 +302,7 @@ export default function GirlfriendFitnessApp() {
       const savedNutritionSub = localStorage.getItem('islandGainsNutritionSub');
       const savedProfSub = localStorage.getItem('islandGainsProfileSub');
       
-      const isValidToday = SUB_TABS.today.some(t => t.id === savedTodaySub);
+      const isValidToday = ['overview', 'workout', 'diet'].includes(savedTodaySub);
       const isValidWorkouts = SUB_TABS.workouts.some(t => t.id === savedWorkoutsSub);
       const isValidNutrition = SUB_TABS.nutrition.some(t => t.id === savedNutritionSub);
       const isValidProf = SUB_TABS.profile.some(t => t.id === savedProfSub);
