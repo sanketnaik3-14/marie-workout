@@ -119,10 +119,17 @@ export default function GirlfriendFitnessApp() {
 
   // --- NAVIGATION STATE ---
   const [mainTab, setMainTab] = useState('today');
-  const [subTabs, setSubTabs] = useState({ workouts: 'routines', nutrition: 'plans', profile: 'macros' });
+  const [subTabs, setSubTabs] = useState({ today: 'overview', workouts: 'routines', nutrition: 'plans', profile: 'macros' });
   const [notification, setNotification] = useState('');
   const [progressView, setProgressView] = useState('overview'); 
+  const [workoutLogFilter, setWorkoutLogFilter] = useState('All');
+  const [extraQtys, setExtraQtys] = useState({});
   const showNotification = (msg) => { setNotification(msg); setTimeout(() => setNotification(''), 3000); };
+
+  const getLocalISODate = () => {
+    const nowLocal = new Date();
+    return new Date(nowLocal.getTime() - (nowLocal.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+  };
 
   // ============================================================================
   // --- HELPER: COLOR CODING ---
@@ -764,8 +771,7 @@ export default function GirlfriendFitnessApp() {
       const numQty = parseFloat(qty);
       if (!numQty || numQty <= 0) return showNotification("Enter a valid quantity");
       const ratio = numQty / item.baseQuantity;
-      const nowLocal = new Date();
-      const dateStr = new Date(nowLocal.getTime() - (nowLocal.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      const dateStr = getLocalISODate();
       const addedItem = {
         id: `ext${Date.now()}`, name: `${item.name} (${numQty}${item.unit})`,
         date: dateStr,
@@ -820,8 +826,11 @@ export default function GirlfriendFitnessApp() {
     }
   };
 
-  const sortedWorkoutHistory = [...mockWorkoutHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
-  const groupedHistory = sortedWorkoutHistory.reduce((acc, log) => {
+  const uniqueRoutines = ['All', ...new Set(mockWorkoutHistory.map(h => h.routine).filter(Boolean))];
+  const filteredWorkoutHistory = [...mockWorkoutHistory]
+    .filter(h => workoutLogFilter === 'All' || h.routine === workoutLogFilter)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const groupedHistory = filteredWorkoutHistory.reduce((acc, log) => {
     if (!acc[log.date]) acc[log.date] = { day: log.day, exercises: [] };
     acc[log.date].exercises.push(log);
     return acc;
@@ -835,9 +844,8 @@ export default function GirlfriendFitnessApp() {
   const saveWeeklyProgress = async () => {
     try {
       if (!trackWeight) return showNotification("Please enter at least your weight!");
-      const logId = Date.now().toString();
-      const now = new Date();
-      const dateStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      const dateStr = getLocalISODate();
+      const logId = dateStr; // Overwrite today's entry if saved multiple times
   
       const newLog = {
         id: logId, date: dateStr, weight: parseFloat(trackWeight) || 0,
@@ -845,7 +853,7 @@ export default function GirlfriendFitnessApp() {
       };
       
       if (!isMock) await setDoc(getDocRef('measurementHistory', logId), newLog);
-      else setMockMeasurementHistory([newLog, ...mockMeasurementHistory]);
+      else setMockMeasurementHistory(prev => [newLog, ...prev.filter(h => h.id !== logId)]);
       
       showNotification("Progress saved to cloud successfully!");
       setTrackWeight(''); setTrackWaist(''); setTrackHip(''); setTrackArm('');
@@ -887,8 +895,7 @@ export default function GirlfriendFitnessApp() {
 
   const saveWorkoutSession = async () => {
     try {
-      const now = new Date();
-      const dateStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      const dateStr = getLocalISODate();
       let loggedSomething = false;
       
       for (let idx = 0; idx < selectedWorkout.exercises.length; idx++) {
@@ -898,8 +905,8 @@ export default function GirlfriendFitnessApp() {
           const validSets = sets.filter(s => s && (s.weight || s.reps));
           if (validSets.length > 0) {
              const logItem = {
-               id: `${dateStr}-${exercise.name.replace(/\s+/g, '')}-${Date.now()}-${idx}`,
-               date: dateStr, day: selectedDay, exercise: exercise.name,
+               id: `${dateStr}-${exercise.name.replace(/\s+/g, '')}-${activeRoutineId || 'custom'}-${idx}`,
+               date: dateStr, day: selectedDay, exercise: exercise.name, routine: selectedWorkout.title || 'Custom',
                sets: validSets.map((s, i) => ({ set: i+1, weight: Number(s.weight) || 0, reps: Number(s.reps) || 0 }))
              };
              if (!isMock) await setDoc(getDocRef('workoutHistory', logItem.id), logItem);
@@ -911,6 +918,7 @@ export default function GirlfriendFitnessApp() {
       if (loggedSomething) {
           showNotification(`${selectedDay} cloud session saved!`);
           setWorkoutInputs({});
+          switchSubTab('today', 'overview');
       } else showNotification("Please enter some weights/reps first.");
     } catch (err) {
       console.error(err);
@@ -923,8 +931,7 @@ export default function GirlfriendFitnessApp() {
   const todaysPlan = mealTemplates.find(t => t.id === todaysPlanId);
 
   // Define exactly what "today" is to prevent infinite compounding of extra foods
-  const nowLocal = new Date();
-  const currentDateStr = new Date(nowLocal.getTime() - (nowLocal.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+  const currentDateStr = getLocalISODate();
   const activeExtras = selectedDay === actualToday ? dailyExtras.filter(ext => !ext.date || ext.date === currentDateStr) : [];
 
   let consumed = { calories: 0, protein: 0, carbs: 0, fat: 0 };
