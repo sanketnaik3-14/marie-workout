@@ -290,15 +290,18 @@ export default function GirlfriendFitnessApp() {
       if (savedMain && isValidMain) setMainTab(savedMain);
       else setMainTab('today');
       
+      const savedTodaySub = localStorage.getItem('islandGainsTodaySub');
       const savedWorkoutsSub = localStorage.getItem('islandGainsWorkoutsSub');
       const savedNutritionSub = localStorage.getItem('islandGainsNutritionSub');
       const savedProfSub = localStorage.getItem('islandGainsProfileSub');
       
+      const isValidToday = SUB_TABS.today.some(t => t.id === savedTodaySub);
       const isValidWorkouts = SUB_TABS.workouts.some(t => t.id === savedWorkoutsSub);
       const isValidNutrition = SUB_TABS.nutrition.some(t => t.id === savedNutritionSub);
       const isValidProf = SUB_TABS.profile.some(t => t.id === savedProfSub);
       
       setSubTabs({
+        today: isValidToday ? savedTodaySub : 'overview',
         workouts: isValidWorkouts ? savedWorkoutsSub : 'routines',
         nutrition: isValidNutrition ? savedNutritionSub : 'plans',
         profile: isValidProf ? savedProfSub : 'macros'
@@ -1073,29 +1076,40 @@ export default function GirlfriendFitnessApp() {
                 </div>
               </div>
               
-              {/* ASSIGNMENTS */}
-              <div className="bg-slate-900 p-5 sm:p-6 rounded-[2rem] border border-slate-800 shadow-xl relative">
-                <div className="flex justify-between items-center mb-4 sm:mb-5">
-                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                    <CalendarDays size={16} className="text-indigo-400" /> {selectedDay}'s Schedule
-                  </h3>
+              {subTabs.today === 'overview' && (
+                <div className="animate-in fade-in zoom-in-95 duration-300 space-y-6">
+                  {/* ASSIGNMENTS */}
+                  <div className="bg-slate-900 p-5 sm:p-6 rounded-[2rem] border border-slate-800 shadow-xl relative">
+                    <div className="flex justify-between items-center mb-4 sm:mb-5">
+                      <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <CalendarDays size={16} className="text-indigo-400" /> {selectedDay}'s Schedule
+                      </h3>
+                    </div>
+    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                       <button onClick={() => switchSubTab('today', 'workout')} className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex items-center justify-between gap-3 hover:border-cyan-500/50 transition-colors text-left group">
+                         <div className="flex items-center gap-3">
+                           <div className="bg-cyan-500/10 p-2 sm:p-3 rounded-xl"><Activity className="text-cyan-400" size={20}/></div>
+                           <div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Workout</p><p className="text-sm font-bold text-white truncate">{assignedWorkouts[selectedDay] ? workoutTemplates.find(t=>t.id===assignedWorkouts[selectedDay])?.title : 'Rest Day'}</p></div>
+                         </div>
+                         <ChevronRight size={18} className="text-slate-600 group-hover:text-cyan-400 transition-colors" />
+                       </button>
+                       <button onClick={() => switchSubTab('today', 'diet')} className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex items-center justify-between gap-3 hover:border-rose-500/50 transition-colors text-left group">
+                         <div className="flex items-center gap-3">
+                           <div className="bg-rose-500/10 p-2 sm:p-3 rounded-xl"><Utensils className="text-rose-400" size={20}/></div>
+                           <div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Diet</p><p className="text-sm font-bold text-white truncate">{assignedMeals[selectedDay] ? mealTemplates.find(t=>t.id===assignedMeals[selectedDay])?.name : 'Off Plan'}</p></div>
+                         </div>
+                         <ChevronRight size={18} className="text-slate-600 group-hover:text-rose-400 transition-colors" />
+                       </button>
+                    </div>
+                  </div>
                 </div>
+              )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                   <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex items-center gap-3">
-                     <div className="bg-cyan-500/10 p-2 sm:p-3 rounded-xl"><Activity className="text-cyan-400" size={20}/></div>
-                     <div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Workout</p><p className="text-sm font-bold text-white truncate">{assignedWorkouts[selectedDay] ? workoutTemplates.find(t=>t.id===assignedWorkouts[selectedDay])?.title : 'Rest Day'}</p></div>
-                   </div>
-                   <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/50 flex items-center gap-3">
-                     <div className="bg-rose-500/10 p-2 sm:p-3 rounded-xl"><Utensils className="text-rose-400" size={20}/></div>
-                     <div className="min-w-0"><p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Diet</p><p className="text-sm font-bold text-white truncate">{assignedMeals[selectedDay] ? mealTemplates.find(t=>t.id===assignedMeals[selectedDay])?.name : 'Off Plan'}</p></div>
-                   </div>
-                </div>
-              </div>
-
-              {/* THE DIET LOG */}
-              {calcResults && (
-                <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
+              {subTabs.today === 'diet' && calcResults && (
+                <div className="animate-in slide-in-from-right-8 duration-300">
+                  <button onClick={() => switchSubTab('today', 'overview')} className="flex items-center gap-1 sm:gap-2 text-slate-400 hover:text-white mb-4 sm:mb-6 font-bold text-xs sm:text-sm"><ChevronLeft size={16} /> Back to Overview</button>
+                  <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
                   {(() => {
                     const isOver = consumed.calories >= calcResults.calories;
                     const diff = Math.abs(calcResults.calories - consumed.calories);
@@ -1151,9 +1165,9 @@ export default function GirlfriendFitnessApp() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                                <input type="number" inputMode="decimal" placeholder={ing.baseQuantity} id={`extra-${ing.id}`} className="w-12 sm:w-14 bg-slate-800 text-white font-bold p-1 rounded-md text-center text-[10px] sm:text-xs focus:outline-none" />
+                                    <input type="number" inputMode="decimal" placeholder={ing.baseQuantity} value={extraQtys[ing.id] || ''} onChange={(e) => setExtraQtys({...extraQtys, [ing.id]: e.target.value})} className="w-12 sm:w-14 bg-slate-800 text-white font-bold p-1 rounded-md text-center text-[10px] sm:text-xs focus:outline-none" />
                                 <span className="text-[8px] sm:text-[10px] text-slate-400 w-6 sm:w-8">{ing.unit}</span>
-                                <button onClick={() => { const el = document.getElementById(`extra-${ing.id}`); const val = el?.value || ing.baseQuantity; addExtraToToday(ing, val); if (el) el.value = ''; }} className="bg-emerald-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-emerald-600 transition-colors"><Plus size={12} /></button>
+                                    <button onClick={() => { const val = extraQtys[ing.id] || ing.baseQuantity; addExtraToToday(ing, val); setExtraQtys({...extraQtys, [ing.id]: ''}); }} className="bg-emerald-500 text-white p-1 sm:p-1.5 rounded-md hover:bg-emerald-600 transition-colors"><Plus size={12} /></button>
                               </div>
                             </div>
                           ))}
@@ -1177,8 +1191,10 @@ export default function GirlfriendFitnessApp() {
             )}
 
             {subTabs.today === 'workout' && (
-              <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl animate-in slide-in-from-right-8 duration-300">
-                <div className="flex justify-between items-start mb-6">
+              <div className="animate-in slide-in-from-right-8 duration-300">
+                <button onClick={() => switchSubTab('today', 'overview')} className="flex items-center gap-1 sm:gap-2 text-slate-400 hover:text-white mb-4 sm:mb-6 font-bold text-xs sm:text-sm"><ChevronLeft size={16} /> Back to Overview</button>
+                <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
+                  <div className="flex justify-between items-start mb-6">
                   <div>
                     <p className="text-cyan-400 font-bold text-sm uppercase mb-1 flex items-center gap-2"><Calendar size={16} /> {selectedDay}'s Workout</p>
                     <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">{selectedWorkout.title}</h2>
@@ -1214,6 +1230,7 @@ export default function GirlfriendFitnessApp() {
                     <button onClick={saveWorkoutSession} className="w-full mt-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 rounded-full font-extrabold text-sm sm:text-lg flex items-center justify-center gap-2 hover:scale-[1.02] shadow-lg"><Save size={20} /> SAVE SESSION</button>
                   </div>
                 )}
+                </div>
               </div>
             )}
             </div>
@@ -1837,6 +1854,15 @@ export default function GirlfriendFitnessApp() {
                   <button onClick={() => setProgressView('overview')} className="flex items-center gap-1 sm:gap-2 text-slate-400 hover:text-white mb-4 sm:mb-6 font-bold text-xs sm:text-sm"><ChevronLeft size={16} /> Back to Overview</button>
                   <div className="bg-slate-900 p-5 sm:p-8 rounded-[2rem] border border-slate-800 shadow-2xl">
                     <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3"><Dumbbell size={24} className="text-cyan-400"/> Workout Logs</h2>
+                    
+                    <div className="flex gap-2 overflow-x-auto pb-4 mb-4 border-b border-slate-800/50 scrollbar-hide">
+                      {uniqueRoutines.map(routine => (
+                        <button key={routine} onClick={() => setWorkoutLogFilter(routine)} className={`px-4 py-1.5 rounded-full font-bold text-xs whitespace-nowrap transition-colors ${workoutLogFilter === routine ? 'bg-cyan-500 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}`}>
+                          {routine}
+                        </button>
+                      ))}
+                    </div>
+                    
                     <div className="space-y-6 sm:space-y-8">
                       {Object.keys(groupedHistory).length === 0 ? <p className="text-slate-500 italic text-center p-6 text-sm">No workouts logged yet.</p> : (
                         Object.entries(groupedHistory).map(([date, data]) => (
@@ -1846,7 +1872,10 @@ export default function GirlfriendFitnessApp() {
                               {data.exercises.map(log => (
                                 <div key={log.id} className="bg-slate-800/50 p-3 sm:p-4 rounded-2xl border border-slate-700/50 relative group">
                                   <button onClick={() => deleteWorkoutLog(log.id)} className="absolute top-2 sm:top-3 right-2 sm:right-3 text-slate-500 hover:text-red-400 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity p-1"><Trash2 size={16} /></button>
-                                  <p className="text-white font-bold mb-2 sm:mb-3 text-sm sm:text-base pr-6">{log.exercise}</p>
+                                  <div className="mb-2 sm:mb-3 pr-6">
+                                    <p className="text-white font-bold text-sm sm:text-base leading-tight">{log.exercise}</p>
+                                    <p className="text-[10px] text-cyan-400 font-medium">{log.routine}</p>
+                                  </div>
                                   <div className="space-y-1">
                                     {log.sets.map((s, i) => (
                                       <div key={i} className="flex justify-between items-center text-xs sm:text-sm border-b border-slate-700/30 last:border-0 pb-1 last:pb-0"><span className="text-slate-400">Set {s.set}</span><span className="font-bold text-white">{s.weight} kg <span className="text-slate-500 font-normal mx-0.5 sm:mx-1">x</span> {s.reps}</span></div>
