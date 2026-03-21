@@ -867,8 +867,14 @@ export default function GirlfriendFitnessApp() {
   // --- DAILY EXECUTION LOGIC (Workouts & Nutrition) ---
   // ============================================================================
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const actualToday = days[new Date().getDay()];
-  const [selectedDay, setSelectedDay] = useState(actualToday);
+  const [actualToday, setActualToday] = useState('Monday');
+  const [selectedDay, setSelectedDay] = useState('Monday');
+
+  useEffect(() => {
+    const today = days[new Date().getDay()];
+    setActualToday(today);
+    setSelectedDay(today);
+  }, []);
 
   const handleDaySelect = (day) => {
     setSelectedDay(day);
@@ -1195,6 +1201,7 @@ export default function GirlfriendFitnessApp() {
                     )}
                   </div>
                 </div>
+              </div>
             )}
 
             {subTabs.today === 'workout' && (
